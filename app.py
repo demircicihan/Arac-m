@@ -80,14 +80,15 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* GERÇEK ARAÇ FOTOĞRAFI STİLİ */
+    /* BİREBİR ORİJİNAL ARAÇ FOTOĞRAFI STİLİ */
     .car-photo {
         width: 100% !important;
-        height: 180px !important;
+        height: 190px !important;
         object-fit: cover !important;
         border-radius: 16px !important;
         margin: 10px 0 14px 0 !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+        background-color: #F1F5F9 !important;
     }
 
     .car-cat {
@@ -198,10 +199,10 @@ if not os.path.exists(DATA_FILE):
     df = pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Arac", "Gun", "ToplamTutar"])
     df.to_csv(DATA_FILE, index=False)
 
-# GERÇEK ARAÇ GÖRSELLERİYLE GÜNCELLENMİŞ VERİ TABANI
+# BİREBİR DOĞRU VE HD OLAN MODEL FOTOĞRAFLARI
 ARACLAR = [
     {
-        "ad": "Peugeot 508", 
+        "ad": "Peugeot 508 GT", 
         "kat": "SEDAN • PREMİUM", 
         "vites": "Otomatik", 
         "yakit": "Dizel", 
@@ -209,7 +210,7 @@ ARACLAR = [
         "puan": "4.9", 
         "koltuk": "5 Koltuk", 
         "bagaj": "2 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop"
+        "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/2019_Peugeot_508_GT_Line_PureTech_1.6_Front.jpg/800px-2019_Peugeot_508_GT_Line_PureTech_1.6_Front.jpg"
     },
     {
         "ad": "Renault Clio", 
@@ -220,7 +221,7 @@ ARACLAR = [
         "puan": "4.7", 
         "koltuk": "5 Koltuk", 
         "bagaj": "1 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop"
+        "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/2019_Renault_Clio_Iconic_TCe_90_1.0_Front.jpg/800px-2019_Renault_Clio_Iconic_TCe_90_1.0_Front.jpg"
     },
     {
         "ad": "Ford Focus", 
@@ -231,7 +232,7 @@ ARACLAR = [
         "puan": "4.8", 
         "koltuk": "5 Koltuk", 
         "bagaj": "2 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop"
+        "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/2019_Ford_Focus_ST-Line_X_1.5_Front.jpg/800px-2019_Ford_Focus_ST-Line_X_1.5_Front.jpg"
     },
     {
         "ad": "Fiat Egea Cross", 
@@ -242,7 +243,7 @@ ARACLAR = [
         "puan": "4.6", 
         "koltuk": "5 Koltuk", 
         "bagaj": "2 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop"
+        "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/2021_Fiat_Tipo_Cross_1.0_Front.jpg/800px-2021_Fiat_Tipo_Cross_1.0_Front.jpg"
     },
     {
         "ad": "Tesla Model 3", 
@@ -307,7 +308,7 @@ else:
             gun = st.number_input("Süre (Gün)", min_value=1, max_value=30, value=1)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Araç Kartları Listesi (Gerçek Fotoğraflı)
+        # Araç Kartları Listesi (Doğru Fotoğraflı)
         for arac in ARACLAR:
             if vites_filtre != "Tümü" and arac["vites"] != vites_filtre:
                 continue

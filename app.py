@@ -15,7 +15,7 @@ st.set_page_config(
 # ULTRA MODERN iOS GLASSMORPHISM & GRADIENT CSS
 st.markdown("""
     <style>
-    /* Canlı ve Dikkat Çekici Mor/Mavi Arka Plan Degradesi */
+    /* Arka Plan Degradesi */
     .stApp {
         background: linear-gradient(180deg, #E0E7FF 0%, #F1F5F9 35%, #F8FAFC 100%) !important;
         background-attachment: fixed !important;
@@ -27,7 +27,7 @@ st.markdown("""
     #MainMenu {visibility: hidden !important;}
     .stDeployButton {display:none !important;}
 
-    /* Tipografi ve Renk Zorlaması */
+    /* Tipografi */
     html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span {
         color: #0F172A !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif !important;
@@ -59,7 +59,7 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
 
-    /* Cam Efektli (Glassmorphism) Arama Paneli */
+    /* Cam Efektli Arama Paneli */
     .search-glass {
         background: rgba(255, 255, 255, 0.85) !important;
         backdrop-filter: blur(12px) !important;
@@ -73,11 +73,21 @@ st.markdown("""
     /* Lüks Şık Araç Kartı */
     .car-card-modern {
         background-color: #FFFFFF !important;
-        padding: 20px !important;
+        padding: 18px !important;
         border-radius: 24px !important;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
         border: 1px solid #E2E8F0 !important;
         margin-bottom: 12px !important;
+    }
+
+    /* GERÇEK ARAÇ FOTOĞRAFI STİLİ */
+    .car-photo {
+        width: 100% !important;
+        height: 180px !important;
+        object-fit: cover !important;
+        border-radius: 16px !important;
+        margin: 10px 0 14px 0 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
     }
 
     .car-cat {
@@ -101,7 +111,7 @@ st.markdown("""
         font-size: 22px !important;
         font-weight: 900 !important;
         color: #0F172A !important;
-        margin: 6px 0 12px 0 !important;
+        margin: 4px 0 !important;
     }
 
     .pill-box {
@@ -139,7 +149,7 @@ st.markdown("""
         align-items: center !important;
     }
 
-    /* Sixt Tarzı Canlı Turuncu Buton */
+    /* Canlı Turuncu Buton */
     div.stButton > button {
         width: 100% !important;
         background: linear-gradient(135deg, #FF6B00 0%, #FF5F00 100%) !important;
@@ -188,12 +198,63 @@ if not os.path.exists(DATA_FILE):
     df = pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Arac", "Gun", "ToplamTutar"])
     df.to_csv(DATA_FILE, index=False)
 
+# GERÇEK ARAÇ GÖRSELLERİYLE GÜNCELLENMİŞ VERİ TABANI
 ARACLAR = [
-    {"ad": "Peugeot 508", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500, "puan": "4.9", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "foto": "🚘"},
-    {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900, "puan": "4.7", "koltuk": "5 Koltuk", "bagaj": "1 Valiz", "foto": "🚗"},
-    {"ad": "Ford Focus", "kat": "COMPACT • KONFOR", "vites": "Otomatik", "yakit": "Benzin", "fiyat": 1200, "puan": "4.8", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "foto": "🚙"},
-    {"ad": "Fiat Egea Cross", "kat": "CROSSOVER • EKONOMİK", "vites": "Manuel", "yakit": "Dizel", "fiyat": 850, "puan": "4.6", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "foto": "🚕"},
-    {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500, "puan": "5.0", "koltuk": "5 Koltuk", "bagaj": "3 Valiz", "foto": "⚡"}
+    {
+        "ad": "Peugeot 508", 
+        "kat": "SEDAN • PREMİUM", 
+        "vites": "Otomatik", 
+        "yakit": "Dizel", 
+        "fiyat": 1500, 
+        "puan": "4.9", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "2 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop"
+    },
+    {
+        "ad": "Renault Clio", 
+        "kat": "HATCHBACK • EKONOMİK", 
+        "vites": "Manuel", 
+        "yakit": "Benzin", 
+        "fiyat": 900, 
+        "puan": "4.7", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "1 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop"
+    },
+    {
+        "ad": "Ford Focus", 
+        "kat": "COMPACT • KONFOR", 
+        "vites": "Otomatik", 
+        "yakit": "Benzin", 
+        "fiyat": 1200, 
+        "puan": "4.8", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "2 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop"
+    },
+    {
+        "ad": "Fiat Egea Cross", 
+        "kat": "CROSSOVER • EKONOMİK", 
+        "vites": "Manuel", 
+        "yakit": "Dizel", 
+        "fiyat": 850, 
+        "puan": "4.6", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "2 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop"
+    },
+    {
+        "ad": "Tesla Model 3", 
+        "kat": "LÜKS • %100 ELEKTRİK", 
+        "vites": "Otomatik", 
+        "yakit": "Elektrik", 
+        "fiyat": 2500, 
+        "puan": "5.0", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "3 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&auto=format&fit=crop"
+    }
 ]
 
 if 'kullanici' not in st.session_state:
@@ -246,21 +307,21 @@ else:
             gun = st.number_input("Süre (Gün)", min_value=1, max_value=30, value=1)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Araç Kartları Listesi (Hatasız Temiz HTML Render)
+        # Araç Kartları Listesi (Gerçek Fotoğraflı)
         for arac in ARACLAR:
             if vites_filtre != "Tümü" and arac["vites"] != vites_filtre:
                 continue
 
             toplam_fiyat = arac["fiyat"] * gun
             
-            # HTML Kod Bloğu Kırılmasını Önleyen Temiz Yapı
             card_html = f"""
             <div class="car-card-modern">
                 <div>
                     <span class="car-cat">{arac['kat']}</span>
                     <span class="rating-pill">★ {arac['puan']}</span>
                 </div>
-                <div class="car-title-text">{arac['foto']} {arac['ad']}</div>
+                <div class="car-title-text">{arac['ad']}</div>
+                <img src="{arac['resim']}" class="car-photo" alt="{arac['ad']}"/>
                 <div class="pill-box">
                     <span class="tag-item">🔀 {arac['vites']}</span>
                     <span class="tag-item">⛽ {arac['yakit']}</span>

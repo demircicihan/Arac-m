@@ -23,7 +23,7 @@ if not os.path.exists(LOG_FILE):
     with open(LOG_FILE, "w", encoding="utf-8-sig") as f:
         f.write("")
 
-# --- DETAYLANDIRILMIŞ ULTRA ARAÇ FİLOSU (FOTOĞRAFSAN ARINDIRILMIŞ) ---
+# --- GENİŞLETİLMİŞ LÜKS ARAÇ FİLOSU (10 ARAÇ) ---
 ARACLAR = [
     {
         "ad": "Peugeot 508 GT",
@@ -33,85 +33,184 @@ ARACLAR = [
         "fiyat": 1500,
         "puan": "4.9",
         "koltuk": "5 Koltuk",
-        "bagaj": "2 Valiz",
+        "bagaj": "487 Lt",
         "badge": "🔥 EN ÇOK TERCİH EDİLEN",
-        "motor": "1.5 BlueHDi (130 HP)",
-        "sanziman": "8 İleri EAT8",
+        "motor": "1.5 BlueHDi (130 HP / 300 Nm Torque)",
+        "sanziman": "8 İleri Tam Otomatik EAT8",
         "tuketim": "4.1 Lt / 100km",
         "hizlanma": "0-100 km/s: 9.9 sn",
-        "donanimlar": ["Massage Seat", "Focal® Hi-Fi", "Night Vision", "Kör Nokta"],
+        "azami_hiz": "208 km/s",
+        "cekis": "Önden Çekiş (FWD)",
+        "donanimlar": ["Massage Seat", "Focal® Hi-Fi Ses Sistemi", "Night Vision Gece Görüşü", "Kör Nokta Uyarı", "Adaptif Hız Sabitleyici"],
     },
     {
-        "ad": "Tesla Model 3",
+        "ad": "Tesla Model 3 Performance",
         "kat": "LÜKS • %100 ELEKTRİK",
         "vites": "Otomatik",
         "yakit": "Elektrik",
         "fiyat": 2500,
         "puan": "5.0",
         "koltuk": "5 Koltuk",
-        "bagaj": "3 Valiz",
+        "bagaj": "561 Lt",
         "badge": "⚡ TEKNOLOJİ HARİKASI",
-        "motor": "Dual Motor AWD (283 HP)",
-        "sanziman": "Tek Vitesli Otomatik",
-        "tuketim": "14.4 kWh / 100km",
-        "hizlanma": "0-100 km/s: 6.1 sn",
-        "donanimlar": ["Autopilot", "Cam Tavan", "15 Touchscreen", "Koltuk Isıtma"],
+        "motor": "Dual Motor AWD (510 HP / 660 Nm Torque)",
+        "sanziman": "Tek Vitesli Otomatik Direct Drive",
+        "tuketim": "14.4 kWh / 100km (Menzil: 528 km)",
+        "hizlanma": "0-100 km/s: 3.1 sn",
+        "azami_hiz": "261 km/s",
+        "cekis": "Dört Çeker (AWD)",
+        "donanimlar": ["Full Self-Driving Autopilot", "Panoramik Cam Tavan", "15.4 Inc Touchscreen", "Koltuk & Direksiyon Isıtma", "Sentry Mode Güvenlik"],
     },
     {
-        "ad": "Ford Focus",
+        "ad": "BMW 420i Gran Coupé M Sport",
+        "kat": "COUPE • PREMİUM SPOR",
+        "vites": "Otomatik",
+        "yakit": "Benzin",
+        "fiyat": 2800,
+        "puan": "4.9",
+        "koltuk": "5 Koltuk",
+        "bagaj": "470 Lt",
+        "badge": "💎 PREMİUM SPOR",
+        "motor": "2.0 BMW TwinPower Turbo (170 HP / 250 Nm)",
+        "sanziman": "8 İleri Steptronic Spor Otomatik",
+        "tuketim": "6.6 Lt / 100km",
+        "hizlanma": "0-100 km/s: 7.9 sn",
+        "azami_hiz": "230 km/s",
+        "cekis": "Arkadan İtiş (RWD)",
+        "donanimlar": ["M Aerodinamik Paket", "Harman Kardon® Ses Sistemi", "BMW Curved Display", "Head-Up Display", "Lazer Far"],
+    },
+    {
+        "ad": "Mercedes-Benz C200 4MATIC",
+        "kat": "SEDAN • LÜKS KONFOR",
+        "vites": "Otomatik",
+        "yakit": "Benzin",
+        "fiyat": 2700,
+        "puan": "4.9",
+        "koltuk": "5 Koltuk",
+        "bagaj": "455 Lt",
+        "badge": "👑 KONFORUN SİMGESİ",
+        "motor": "1.5 Mild-Hybrid Turbo (204 HP + 20 HP EQ)",
+        "sanziman": "9G-TRONIC Otomatik",
+        "tuketim": "6.4 Lt / 100km",
+        "hizlanma": "0-100 km/s: 7.1 sn",
+        "azami_hiz": "241 km/s",
+        "cekis": "Dört Çeker (4MATIC)",
+        "donanimlar": ["MBUX 11.9 Inc Dikey Ekran", "64 Renk Ambiyans Aydınlatma", "Burmester® 3D Ses", "Hafızalı Elektrikli Koltuklar", "Otonom Sürüş Destek"],
+    },
+    {
+        "ad": "Porsche Macan GTS",
+        "kat": "SUV • LÜKS SPOR",
+        "vites": "Otomatik",
+        "yakit": "Benzin",
+        "fiyat": 4200,
+        "puan": "5.0",
+        "koltuk": "5 Koltuk",
+        "bagaj": "488 Lt",
+        "badge": "🏎️ ULTRA PERFORMANS",
+        "motor": "2.9 V6 Twin-Turbo (440 HP / 550 Nm)",
+        "sanziman": "7 İleri PDK Çift Kavrama",
+        "tuketim": "9.9 Lt / 100km",
+        "hizlanma": "0-100 km/s: 4.3 sn",
+        "azami_hiz": "272 km/s",
+        "cekis": "Dört Çeker (AWD)",
+        "donanimlar": ["Spor Ekzoz Sistemi", "PASM Havalı Süspansiyon", "BOSE® Surround Sound", "GTS Spor Koltuklar", "Sport Chrono Paket"],
+    },
+    {
+        "ad": "Ford Focus ST-Line",
         "kat": "COMPACT • KONFOR",
         "vites": "Otomatik",
         "yakit": "Benzin",
         "fiyat": 1200,
         "puan": "4.8",
         "koltuk": "5 Koltuk",
-        "bagaj": "2 Valiz",
+        "bagaj": "392 Lt",
         "badge": "🌟 AİLE DOSTU",
-        "motor": "1.5 Ti-VCT (123 HP)",
-        "sanziman": "6 İleri Otomatik",
+        "motor": "1.5 Ti-VCT Ecoboost (123 HP / 153 Nm)",
+        "sanziman": "6 İleri Tam Otomatik",
         "tuketim": "6.2 Lt / 100km",
         "hizlanma": "0-100 km/s: 11.2 sn",
-        "donanimlar": ["SYNC 4 Ekran", "Şerit Takip", "Geri Görüş Kamerası", "Hız Sabitleyici"],
+        "azami_hiz": "195 km/s",
+        "cekis": "Önden Çekiş (FWD)",
+        "donanimlar": ["SYNC 4 13.2 Inc Ekran", "Şerit Takip ve Destek", "180° Geri Görüş Kamerası", "Kablosuz Şarj", "ST-Line Gövde Kiti"],
     },
     {
-        "ad": "Renault Clio",
+        "ad": "Volkswagen Tiguan R-Line",
+        "kat": "SUV • PREMİUM KONFOR",
+        "vites": "Otomatik",
+        "yakit": "Benzin",
+        "fiyat": 1900,
+        "puan": "4.8",
+        "koltuk": "5 Koltuk",
+        "bagaj": "615 Lt",
+        "badge": "🏕️ PREMİUM SUV",
+        "motor": "1.5 TSI ACT (150 HP / 250 Nm)",
+        "sanziman": "7 İleri DSG Otomatik",
+        "tuketim": "5.7 Lt / 100km",
+        "hizlanma": "0-100 km/s: 9.2 sn",
+        "azami_hiz": "202 km/s",
+        "cekis": "Önden Çekiş (FWD)",
+        "donanimlar": ["IQ.LIGHT Matrix LED Farlar", "Digital Cockpit Pro", "Panoramik Açılır Tavan", "3 Bölgeli Tam Otomatik Klima", "Bagaj Elektrikli Açılır"],
+    },
+    {
+        "ad": "Renault Clio R.S. Line",
         "kat": "HATCHBACK • EKONOMİK",
         "vites": "Manuel",
         "yakit": "Benzin",
         "fiyat": 900,
         "puan": "4.7",
         "koltuk": "5 Koltuk",
-        "bagaj": "1 Valiz",
+        "bagaj": "391 Lt",
         "badge": "💡 ŞEHİR DOSTU",
-        "motor": "1.0 TCe (90 HP)",
+        "motor": "1.0 TCe Turbo (90 HP / 160 Nm)",
         "sanziman": "6 İleri Manuel",
         "tuketim": "5.0 Lt / 100km",
         "hizlanma": "0-100 km/s: 12.2 sn",
-        "donanimlar": ["Apple CarPlay", "Park Sensörü", "Start-Stop", "EASYLINK"],
+        "azami_hiz": "180 km/s",
+        "cekis": "Önden Çekiş (FWD)",
+        "donanimlar": ["Apple CarPlay & Android Auto", "Ön & Arka Park Sensörü", "Start-Stop Sistemi", "EASYLINK 9.3 Inc Ekran", "Digital Gösterge Paneli"],
     },
     {
-        "ad": "Fiat Egea Cross",
+        "ad": "Fiat Egea Cross Lounge",
         "kat": "CROSSOVER • EKONOMİK",
         "vites": "Manuel",
         "yakit": "Dizel",
         "fiyat": 850,
         "puan": "4.6",
         "koltuk": "5 Koltuk",
-        "bagaj": "2 Valiz",
+        "bagaj": "440 Lt",
         "badge": "🛣️ UYGUN & MUKAVEMETLİ",
-        "motor": "1.3 MultiJet (95 HP)",
+        "motor": "1.3 MultiJet II (95 HP / 200 Nm)",
         "sanziman": "5 İleri Manuel",
         "tuketim": "4.4 Lt / 100km",
         "hizlanma": "0-100 km/s: 12.8 sn",
-        "donanimlar": ["Yüksek Sürüş Pozisyonu", "City Modu", "10 Tablet Ekran", "Tavan Çıtaları"],
+        "azami_hiz": "173 km/s",
+        "cekis": "Önden Çekiş (FWD)",
+        "donanimlar": ["Yüksek Sürüş Pozisyonu", "City Direksiyon Modu", "10 Inc Tablet Ekran", "Tavan Çıtaları & LED Farlar", "Geri Görüş Kamerası"],
+    },
+    {
+        "ad": "Audi A5 Cabriolet S-Line",
+        "kat": "CABRIO • PREMİUM LÜKS",
+        "vites": "Otomatik",
+        "yakit": "Benzin",
+        "fiyat": 3200,
+        "puan": "4.9",
+        "koltuk": "4 Koltuk",
+        "bagaj": "370 Lt",
+        "badge": "☀️ ÜSTÜ AÇIK LÜKS",
+        "motor": "2.0 40 TFSI Mild-Hybrid (204 HP / 320 Nm)",
+        "sanziman": "7 İleri S tronic Otomatik",
+        "tuketim": "6.3 Lt / 100km",
+        "hizlanma": "0-100 km/s: 7.5 sn",
+        "azami_hiz": "237 km/s",
+        "cekis": "Önden Çekiş (FWD)",
+        "donanimlar": ["Otomatik Açılır Kumaş Tavan", "Virtual Cockpit Plus", "Bang & Olufsen 3D Sound", "Ense Isıtma Sistemi", "Matrix LED Farlar"],
     },
 ]
 
-# --- MODERN CSS & ANİMASYON TASARIMI ---
+# --- MODERN CSS TASARIMI ---
 st.markdown(
     """
     <style>
-    /* GENEL ARKA PLAN VE FONTLAR */
     .stApp {
         background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #0F172A 100%) !important;
         background-attachment: fixed !important;
@@ -120,13 +219,11 @@ st.markdown(
     header {visibility: hidden !important;}
     footer {visibility: hidden !important;}
 
-    /* YAZI RENKLERİ VE TİPOGRAFİ */
     html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, strong {
         color: #F8FAFC !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", Roboto, sans-serif !important;
     }
 
-    /* GLASSMORPHISM ARAMA KARTI */
     .search-card {
         background: rgba(30, 41, 59, 0.7) !important;
         backdrop-filter: blur(16px) !important;
@@ -138,7 +235,6 @@ st.markdown(
         margin-bottom: 25px !important;
     }
 
-    /* MODERN ARAÇ KARTI */
     .car-card-detailed {
         background: rgba(30, 41, 59, 0.65) !important;
         backdrop-filter: blur(12px) !important;
@@ -154,7 +250,6 @@ st.markdown(
         transform: translateY(-2px);
     }
 
-    /* CANLI BADGE VE ETİKETLER */
     .badge-highlight {
         background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%) !important;
         color: #FFFFFF !important;
@@ -172,16 +267,15 @@ st.markdown(
     .tag-koltuk { background: rgba(168, 85, 247, 0.15) !important; color: #E9D5FF !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(233, 213, 255, 0.2); display: inline-block; margin-right: 6px; margin-bottom: 6px; }
     .tag-bagaj { background: rgba(16, 185, 129, 0.15) !important; color: #A7F3D0 !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(167, 243, 208, 0.2); display: inline-block; margin-bottom: 6px; }
 
-    /* TEKNİK ÖZELLİK ETİKETLERİ */
     .tech-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        background: rgba(15, 23, 42, 0.4);
-        padding: 12px;
+        gap: 10px;
+        background: rgba(15, 23, 42, 0.5);
+        padding: 14px;
         border-radius: 14px;
-        margin: 10px 0;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        margin: 12px 0;
+        border: 1px solid rgba(255, 255, 255, 0.08);
     }
     .tech-item {
         font-size: 12px;
@@ -190,16 +284,16 @@ st.markdown(
     }
 
     .feature-chip {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.06) !important;
         color: #E2E8F0 !important;
         font-size: 11px;
         font-weight: 600;
-        padding: 3px 8px;
-        border-radius: 6px;
+        padding: 4px 10px;
+        border-radius: 8px;
         display: inline-block;
-        margin-right: 4px;
-        margin-top: 4px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        margin-right: 6px;
+        margin-top: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .guarantee-badge {
@@ -225,7 +319,6 @@ st.markdown(
         border: 1px solid rgba(52, 211, 153, 0.3) !important;
     }
 
-    /* FİYAT KUTUSU */
     .price-row-box {
         background: rgba(15, 23, 42, 0.6) !important;
         padding: 16px 20px !important;
@@ -237,7 +330,6 @@ st.markdown(
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
-    /* CANLI BUTONLAR (GRADIENT) */
     div.stButton > button, div.stFormSubmitButton > button {
         background: linear-gradient(135deg, #FF6B00 0%, #FF3D00 100%) !important;
         color: #FFFFFF !important;
@@ -252,12 +344,15 @@ st.markdown(
         transition: all 0.3s ease !important;
         cursor: pointer !important;
     }
-    div.stButton > button:hover, div.stFormSubmitButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 14px 30px rgba(255, 107, 0, 0.5) !important;
+
+    /* EXPANDER (DETAY BÖLÜMÜ) STİLİ */
+    div[data-testid="stExpander"] {
+        background: rgba(15, 23, 42, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 14px !important;
+        margin-top: 10px !important;
     }
 
-    /* İNDİRME BUTONLARI */
     [data-testid="stDownloadButton"] > button {
         background: rgba(255, 255, 255, 0.05) !important;
         color: #60A5FA !important;
@@ -268,13 +363,7 @@ st.markdown(
         height: 48px !important;
         width: 100% !important;
     }
-    [data-testid="stDownloadButton"] > button:hover {
-        background: #2563EB !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }
 
-    /* INPUT VE SELECTBOX STİLLERİ */
     input, .stNumberInput div, div[data-baseweb="base-input"], div[data-baseweb="select"] {
         background-color: rgba(15, 23, 42, 0.8) !important;
         color: #F8FAFC !important;
@@ -283,7 +372,6 @@ st.markdown(
         -webkit-text-fill-color: #F8FAFC !important;
     }
 
-    /* SELECTBOX POPOVER (AÇILIR MENÜ) DÜZELTMESİ */
     div[data-baseweb="popover"], div[data-baseweb="popover"] * {
         background-color: #1E293B !important;
         color: #F8FAFC !important;
@@ -298,13 +386,7 @@ st.markdown(
         background-color: #1E293B !important;
         color: #F8FAFC !important;
     }
-    li[data-baseweb="option"]:hover, li[aria-selected="true"] {
-        background-color: #334155 !important;
-        color: #38BDF8 !important;
-        -webkit-text-fill-color: #38BDF8 !important;
-    }
 
-    /* TAB DÜZENİ */
     div[data-baseweb="tab-list"] {
         background-color: rgba(30, 41, 59, 0.8) !important;
         backdrop-filter: blur(10px) !important;
@@ -318,12 +400,7 @@ st.markdown(
         border-radius: 14px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
     }
-    div[aria-selected="true"] span {
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }
 
-    /* VIP SÜRÜCÜ KARTI */
     .vip-card {
         background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%) !important;
         padding: 26px !important;
@@ -471,7 +548,7 @@ else:
                 )
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 🚗 DETAYLI ARAÇ LİSTESİ (HTML GÖRSEL KARTLAR)
+            # 🚗 GENİŞLETİLMİŞ ARAÇ LİSTESİ
             musait_sayisi = 0
             for a in ARACLAR:
                 if vites_filtre != "Tümü" and a["vites"] != vites_filtre:
@@ -483,6 +560,7 @@ else:
                 chips_list = [f'<span class="feature-chip">✨ {d}</span>' for d in a["donanimlar"]]
                 chips_html = "".join(chips_list)
 
+                # TEMEL KART HTML
                 card_html = (
                     f'<div class="car-card-detailed">'
                     f'<div>'
@@ -497,13 +575,6 @@ else:
                     f'<span class="tag-koltuk">👥 {a["koltuk"]}</span>'
                     f'<span class="tag-bagaj">🧳 {a["bagaj"]}</span>'
                     f'</div>'
-                    f'<div class="tech-grid">'
-                    f'<div class="tech-item">⚙️ <b>Motor:</b> {a["motor"]}</div>'
-                    f'<div class="tech-item">🕹️ <b>Şanzıman:</b> {a["sanziman"]}</div>'
-                    f'<div class="tech-item">⛽ <b>Tüketim:</b> {a["tuketim"]}</div>'
-                    f'<div class="tech-item">🚀 <b>Hızlanma:</b> {a["hizlanma"]}</div>'
-                    f'</div>'
-                    f'<div style="margin-top:8px;">{chips_html}</div>'
                     f'<div style="margin-top:10px;"><span class="guarantee-badge">🟢 Anında Teslim • Sınırsız KM • Full Kasko</span></div>'
                     f'<div class="price-row-box">'
                     f'<div>'
@@ -519,6 +590,25 @@ else:
                 )
                 st.markdown(card_html, unsafe_allow_html=True)
 
+                # 🔍 TIKLANABİLİR TÜM DETAYLAR BÖLÜMÜ
+                with st.expander(f"🔍 {a['ad']} - Tüm Teknik ve Donanım Özelliklerini Gör"):
+                    st.markdown(
+                        f"""
+                        <div class="tech-grid">
+                            <div class="tech-item">⚙️ <b>Motor & Güç:</b> {a['motor']}</div>
+                            <div class="tech-item">🕹️ <b>Şanzıman:</b> {a['sanziman']}</div>
+                            <div class="tech-item">⛽ <b>Ort. Tüketim:</b> {a['tuketim']}</div>
+                            <div class="tech-item">🚀 <b>0-100 km/s:</b> {a['hizlanma']}</div>
+                            <div class="tech-item">🏁 <b>Maks. Hız:</b> {a['azami_hiz']}</div>
+                            <div class="tech-item">🏎️ <b>Çekiş Tipi:</b> {a['cekis']}</div>
+                        </div>
+                        <div style="margin-top:8px; margin-bottom:12px;">
+                            <b style="font-size:12px; color:#93C5FD;">Öne Çıkan Lüks Donanımlar:</b><br>{chips_html}
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
                 if st.button(
                     f"⚡ Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"
                 ):
@@ -531,6 +621,8 @@ else:
                         "konum": konum,
                     }
                     st.rerun()
+
+                st.write("")
 
             if musait_sayisi == 0:
                 st.warning("Seçilen vites tipine uygun araç bulunamadı.")

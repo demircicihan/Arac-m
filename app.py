@@ -13,201 +13,206 @@ st.set_page_config(
 
 # --- ARAÇ LİSTESİ ---
 ARACLAR = [
-    {"ad": "Peugeot 508 GT", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500, "puan": "4.9", "koltuk": "5 Koltuk", "bagaj": "2 Valiz"},
-    {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900, "puan": "4.7", "koltuk": "5 Koltuk", "bagaj": "1 Valiz"},
-    {"ad": "Ford Focus", "kat": "COMPACT • KONFOR", "vites": "Otomatik", "yakit": "Benzin", "fiyat": 1200, "puan": "4.8", "koltuk": "5 Koltuk", "bagaj": "2 Valiz"},
-    {"ad": "Fiat Egea Cross", "kat": "CROSSOVER • EKONOMİK", "vites": "Manuel", "yakit": "Dizel", "fiyat": 850, "puan": "4.6", "koltuk": "5 Koltuk", "bagaj": "2 Valiz"},
-    {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500, "puan": "5.0", "koltuk": "5 Koltuk", "bagaj": "3 Valiz"}
+    {"ad": "Peugeot 508 GT", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500, "puan": "4.9"},
+    {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900, "puan": "4.7"},
+    {"ad": "Ford Focus", "kat": "COMPACT • KONFOR", "vites": "Otomatik", "yakit": "Benzin", "fiyat": 1200, "puan": "4.8"},
+    {"ad": "Fiat Egea Cross", "kat": "CROSSOVER • EKONOMİK", "vites": "Manuel", "yakit": "Dizel", "fiyat": 850, "puan": "4.6"},
+    {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500, "puan": "5.0"}
 ]
 
-# --- KRİTİK GÖRÜNÜRLÜK AYARLARI (CSS) ---
+# --- KRİTİK GÖRÜNÜRLÜK VE STİL AYARLARI (CSS) ---
 st.markdown("""
     <style>
-    /* Genel Arka Plan */
+    /* Arka Plan */
     .stApp { background-color: #F1F5F9 !important; }
     header, footer {visibility: hidden !important;}
 
-    /* TÜM YAZILARI KOYU LACİVERT YAP (KARANLIK MODU EZER) */
-    html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div, b, small {
+    /* TÜM YAZILARI ZORUNLU KOYU LACİVERT YAP (Dark Mode Engelleyici) */
+    html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, input {
         color: #0F172A !important;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
+        font-family: -apple-system, sans-serif !important;
     }
 
-    /* GİRİŞ KUTULARI VE SELECTBOX GÖRÜNÜRLÜĞÜ */
+    /* Giriş Kutuları Görünürlüğü */
     input, div[data-baseweb="select"], .stNumberInput div {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
         border: 2px solid #CBD5E1 !important;
         border-radius: 12px !important;
     }
-    
-    /* ARAÇ KARTI TASARIMI */
+
+    /* ARAÇ KARTI */
     .car-card {
         background-color: #FFFFFF !important;
-        padding: 22px !important;
-        border-radius: 24px !important;
+        padding: 20px !important;
+        border-radius: 22px !important;
         border: 2px solid #E2E8F0 !important;
-        margin-bottom: 20px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+        margin-bottom: 15px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
     }
 
-    /* ARAÇ İSMİ - ÖZELLİKLE BURAYI KİLİTLEDİK */
     .car-title {
-        font-size: 26px !important;
+        font-size: 24px !important;
         font-weight: 900 !important;
         color: #0F172A !important;
-        margin: 5px 0 12px 0 !important;
-        display: block !important;
+        margin: 5px 0 !important;
     }
 
-    /* ETİKETLER */
-    .tag-box {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 15px;
-    }
+    /* Renkli Taglar */
     .tag-item {
-        padding: 6px 12px;
-        border-radius: 10px;
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 8px;
         font-size: 12px;
         font-weight: 800;
-        border: 1px solid rgba(0,0,0,0.05);
+        margin-right: 5px;
+        background: #F1F5F9;
+        border: 1px solid #E2E8F0;
     }
 
-    /* FİYAT ALANI */
-    .price-container {
+    /* Fiyat Kutusu */
+    .price-box {
         background-color: #F8FAFC !important;
-        padding: 15px !important;
-        border-radius: 16px !important;
+        padding: 12px !important;
+        border-radius: 14px !important;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border: 1px solid #F1F5F9;
+        margin-top: 10px;
     }
 
-    /* BUTONLAR */
+    /* TURUNCU BUTONLAR */
     div.stButton > button {
-        background: linear-gradient(135deg, #FF6B00 0%, #FF5F00 100%) !important;
-        color: #FFFFFF !important;
+        background: #FF6B00 !important;
+        color: white !important;
+        border-radius: 14px !important;
         border: none !important;
-        border-radius: 16px !important;
         font-weight: 900 !important;
-        font-size: 16px !important;
-        height: 52px !important;
+        height: 48px !important;
         width: 100% !important;
-        margin-top: 10px !important;
-        box-shadow: 0 6px 15px rgba(255, 95, 0, 0.3) !important;
+        box-shadow: 0 4px 12px rgba(255, 107, 0, 0.2) !important;
     }
 
-    /* TAB MENÜSÜ */
-    div[data-baseweb="tab-list"] {
-        background-color: #E2E8F0 !important;
-        border-radius: 15px !important;
-        padding: 5px !important;
-    }
-    div[aria-selected="true"] {
-        background-color: #FFFFFF !important;
-        border-radius: 12px !important;
-    }
-    
     /* PROFIL KARTI */
-    .driver-card {
+    .vip-card {
         background: #1E293B !important;
         padding: 25px !important;
         border-radius: 20px !important;
     }
-    .driver-card * { color: #FFFFFF !important; }
+    .vip-card * { color: #FFFFFF !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- VERİ İŞLEMLERİ ---
+# --- VERİ DOSYASI KONTROLÜ ---
+# Bu dosya sunucuda/bilgisayarında bir kez oluşur ve herkesin verisi buraya eklenir.
 DATA_FILE = "rezervasyonlar.csv"
 if not os.path.exists(DATA_FILE):
-    pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"]).to_csv(DATA_FILE, index=False)
+    df_init = pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"])
+    df_init.to_csv(DATA_FILE, index=False)
 
 if 'kullanici' not in st.session_state:
     st.session_state['kullanici'] = None
 
-# --- UYGULAMA AKIŞI ---
+# --- GİRİŞ EKRANI ---
 if st.session_state['kullanici'] is None:
     st.markdown("<h1 style='text-align:center; font-weight:900;'>DriveNow</h1>", unsafe_allow_html=True)
-    with st.form("login_form"):
+    with st.form("giris_formu"):
         ad = st.text_input("Ad Soyad")
         tc = st.text_input("TC Kimlik No", max_chars=11)
-        tel = st.text_input("Telefon", max_chars=10)
-        if st.form_submit_button("DEVAM ET"):
+        tel = st.text_input("Telefon (5xx...)", max_chars=10)
+        if st.form_submit_button("SİSTEME GİRİŞ YAP"):
             if ad and len(tc) == 11:
                 st.session_state['kullanici'] = {"ad": ad, "tc": tc, "tel": tel}
                 st.rerun()
 else:
-    tab1, tab2, tab3 = st.tabs(["🚗 Araç Seç", "📋 Kiralamalarım", "👤 Profil"])
+    # --- ANA UYGULAMA SEKME YAPISI ---
+    tab1, tab2, tab3 = st.tabs(["🚗 ARAÇLAR", "📋 KAYITLARIM", "👤 PROFİL"])
 
     with tab1:
-        c1, c2 = st.columns(2)
-        with c1:
-            loc = st.selectbox("Lokasyon", ["İstanbul HL", "Sabiha Gökçen HL", "Ankara HL", "İzmir HL"])
-        with c2:
+        st.markdown("<h4 style='font-weight:800;'>Müsait Araçlar</h4>", unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            loc = st.selectbox("Teslimat", ["İstanbul HL", "Sabiha Gökçen HL", "Ankara HL", "İzmir HL"])
+        with col2:
             days = st.number_input("Gün", min_value=1, value=1)
 
         for a in ARACLAR:
             total = a['fiyat'] * days
-            # HTML Kart Yapısı
             st.markdown(f"""
             <div class="car-card">
-                <div style="font-size:11px; font-weight:900; color:#2563EB;">{a['kat']}</div>
+                <div style="font-size:11px; font-weight:900; color:#2563EB;">{a['puan']} ★ {a['kat']}</div>
                 <div class="car-title">{a['ad']}</div>
-                <div class="tag-box">
-                    <span class="tag-item" style="background:#DBEAFE; color:#1E40AF;">{a['vites']}</span>
-                    <span class="tag-item" style="background:#FEF3C7; color:#92400E;">{a['yakit']}</span>
-                    <span class="tag-item" style="background:#F3E8FF; color:#6B21A8;">{a['koltuk']}</span>
+                <div style="margin: 10px 0;">
+                    <span class="tag-item">🔀 {a['vites']}</span>
+                    <span class="tag-item">⛽ {a['yakit']}</span>
                 </div>
-                <div class="price-container">
-                    <div>
-                        <small style="font-weight:700; opacity:0.6;">GÜNLÜK</small><br>
-                        <b style="font-size:18px;">{a['fiyat']} ₺</b>
-                    </div>
-                    <div style="text-align:right;">
-                        <small style="font-weight:700; color:#FF6B00;">TOPLAM</small><br>
-                        <b style="font-size:22px;">{total} ₺</b>
-                    </div>
+                <div class="price-box">
+                    <div><small>GÜNLÜK</small><br><b>{a['fiyat']} ₺</b></div>
+                    <div style="text-align:right;"><small style="color:#FF6B00;">TOPLAM</small><br><b style="font-size:20px;">{total} ₺</b></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button(f"Hemen Kirala: {a['ad']}", key=a['ad']):
-                yeni = pd.DataFrame([[datetime.now().strftime("%d.%m.%Y"), st.session_state['kullanici']['ad'], st.session_state['kullanici']['tc'], st.session_state['kullanici']['tel'], loc, a['ad'], days, total]], 
-                                    columns=["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"])
-                yeni.to_csv(DATA_FILE, mode='a', header=False, index=False)
-                st.success(f"Başarılı! {a['ad']} ayrıldı.")
+            # Kiralama Butonu
+            if st.button(f"Hemen Kirala: {a['ad']}", key=f"btn_{a['ad']}"):
+                # Veriyi hazırla
+                yeni_veri = {
+                    "Tarih": datetime.now().strftime("%d.%m.%Y %H:%M"),
+                    "Musteri": st.session_state['kullanici']['ad'],
+                    "TC": st.session_state['kullanici']['tc'],
+                    "Telefon": st.session_state['kullanici']['tel'],
+                    "Konum": loc,
+                    "Arac": a['ad'],
+                    "Gun": days,
+                    "ToplamTutar": total
+                }
+                # CSV'ye EKLE (Herkes buraya yazar)
+                df_temp = pd.DataFrame([yeni_veri])
+                df_temp.to_csv(DATA_FILE, mode='a', header=False, index=False)
+                st.success(f"Sayın {st.session_state['kullanici']['ad']}, rezervasyonunuz kaydedildi!")
 
     with tab2:
-        df = pd.read_csv(DATA_FILE)
-        user_df = df[df['TC'].astype(str) == str(st.session_state['kullanici']['tc'])]
-        if not user_df.empty:
-            for _, row in user_df.iterrows():
+        st.markdown("<h4 style='font-weight:800;'>Geçmiş İşlemleriniz</h4>", unsafe_allow_html=True)
+        df_read = pd.read_csv(DATA_FILE)
+        # Sadece giriş yapan kişinin TC'sine ait olanları göster
+        user_records = df_read[df_read['TC'].astype(str) == str(st.session_state['kullanici']['tc'])]
+        
+        if not user_records.empty:
+            for _, r in user_records.iterrows():
                 st.markdown(f"""
-                <div class="car-card">
-                    <b style="font-size:20px;">{row['Arac']}</b>
-                    <div style="font-size:13px; margin:5px 0;">{row['Tarih']} • {row['Konum']}</div>
-                    <div style="font-weight:900; color:#059669;">{row['ToplamTutar']} ₺ - ONAYLANDI</div>
+                <div class="car-card" style="border-left: 5px solid #059669;">
+                    <b>{r['Arac']}</b><br>
+                    <small>{r['Tarih']} | {r['Konum']}</small><br>
+                    <div style="margin-top:5px; font-weight:900; color:#059669;">{r['ToplamTutar']} ₺ - ONAYLANDI</div>
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("Henüz kiralama yapmadınız.")
+            st.info("Henüz bir kiralama kaydınız bulunmuyor.")
 
     with tab3:
         k = st.session_state['kullanici']
         st.markdown(f"""
-        <div class="driver-card">
-            <div style="font-size:10px; letter-spacing:2px; opacity:0.7;">PREMIUM SÜRÜCÜ</div>
+        <div class="vip-card">
+            <div style="font-size:10px; letter-spacing:2px; opacity:0.7;">VIP SÜRÜCÜ KARTI</div>
             <div style="font-size:24px; font-weight:900; margin:15px 0;">{k['ad']}</div>
-            <div style="font-size:14px; opacity:0.9;">TC: {k['tc']}</div>
-            <div style="font-size:14px; opacity:0.9;">TEL: +90 {k['tel']}</div>
-            <div style="margin-top:20px; border-top:1px dashed rgba(255,255,255,0.3); padding-top:15px; text-align:center; font-size:20px; letter-spacing:5px;">
-                ||| || |||| ||
-            </div>
+            <div style="font-size:14px;">TC: {k['tc']}</div>
+            <div style="font-size:14px;">TEL: +90 {k['tel']}</div>
+            <div style="margin-top:20px; text-align:center; font-size:20px; letter-spacing:8px; opacity:0.5;">|| ||| | || ||||</div>
         </div>
         """, unsafe_allow_html=True)
+        
+        # YÖNETİCİ ÖZELLİĞİ (Senin için)
+        st.write("---")
+        if st.checkbox("Yönetici Seçeneklerini Göster"):
+            st.write("Tüm sistemdeki rezervasyonları Excel (CSV) olarak indir:")
+            with open(DATA_FILE, "rb") as file:
+                st.download_button(
+                    label="📥 TÜM VERİLERİ İNDİR (Excel/CSV)",
+                    data=file,
+                    file_name="tum_rezervasyonlar.csv",
+                    mime="text/csv"
+                )
+        
         if st.button("Çıkış Yap"):
             st.session_state['kullanici'] = None
             st.rerun()

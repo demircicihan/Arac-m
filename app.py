@@ -65,6 +65,7 @@ st.markdown("""
         margin-bottom: 20px !important;
     }
 
+    /* MODERN ARAÇ KARTI TASARIMI */
     .car-card-modern {
         background-color: #FFFFFF !important;
         padding: 18px !important;
@@ -74,14 +75,34 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    .car-photo {
+    /* YAN YANA İKİİLİ DÜZEN (SPLIT CONTAINER) */
+    .card-split-container {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 12px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .card-left-content {
+        flex: 1 1 58% !important;
+    }
+
+    /* İŞARETLENEN YEŞİL KUTUCUK ALANI (SAĞ RESİM KUTUSU) */
+    .card-right-image-box {
+        flex: 1 1 42% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .car-photo-right {
         width: 100% !important;
-        height: 190px !important;
+        height: 110px !important;
         object-fit: cover !important;
-        border-radius: 16px !important;
-        margin: 10px 0 14px 0 !important;
+        border-radius: 14px !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-        background-color: #F1F5F9 !important;
+        border: 1px solid #F1F5F9 !important;
     }
 
     .car-cat {
@@ -98,46 +119,45 @@ st.markdown("""
         font-size: 12px !important;
         padding: 4px 10px !important;
         border-radius: 10px !important;
-        float: right !important;
     }
 
     .car-title-text {
-        font-size: 22px !important;
+        font-size: 20px !important;
         font-weight: 900 !important;
         color: #0F172A !important;
-        margin: 4px 0 !important;
+        margin: 4px 0 8px 0 !important;
     }
 
     .pill-box {
         display: flex !important;
-        gap: 6px !important;
+        gap: 4px !important;
         flex-wrap: wrap !important;
-        margin-bottom: 12px !important;
+        margin-bottom: 8px !important;
     }
 
     .tag-item {
         background: #F1F5F9 !important;
         color: #334155 !important;
-        font-size: 12px !important;
+        font-size: 11px !important;
         font-weight: 700 !important;
-        padding: 6px 10px !important;
-        border-radius: 8px !important;
+        padding: 4px 8px !important;
+        border-radius: 6px !important;
     }
 
     .guarantee-tag {
         color: #059669 !important;
         background: #ECFDF5 !important;
         font-weight: 700 !important;
-        font-size: 12px !important;
-        padding: 4px 10px !important;
-        border-radius: 8px !important;
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+        border-radius: 6px !important;
         display: inline-block !important;
-        margin-bottom: 12px !important;
     }
 
     .price-row {
         border-top: 1px dashed #E2E8F0 !important;
-        padding-top: 12px !important;
+        padding-top: 10px !important;
+        margin-top: 6px !important;
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
@@ -185,23 +205,73 @@ st.markdown("""
 
 DATA_FILE = "rezervasyonlar.csv"
 
-# Veritabanı ve Konum Sütunu Kontrolü
+# Veritabanı ve Konum Kontrolü
 if not os.path.exists(DATA_FILE):
     df = pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"])
     df.to_csv(DATA_FILE, index=False)
 else:
-    # Eski kayıtlar varsa hata vermemesi için Konum sütununu otomatik ekler
     df = pd.read_csv(DATA_FILE)
     if 'Konum' not in df.columns:
         df['Konum'] = "İstanbul • Sabiha Gökçen HL"
         df.to_csv(DATA_FILE, index=False)
 
+# KESİNTİSİZ YÜKLENEN YÜKSEK KALİTELİ MODEL FOTOĞRAFLARI
 ARACLAR = [
-    {"ad": "Peugeot 508 GT", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500, "puan": "4.9", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/2019_Peugeot_508_GT_Line_PureTech_1.6_Front.jpg/800px-2019_Peugeot_508_GT_Line_PureTech_1.6_Front.jpg"},
-    {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900, "puan": "4.7", "koltuk": "5 Koltuk", "bagaj": "1 Valiz", "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/2019_Renault_Clio_Iconic_TCe_90_1.0_Front.jpg/800px-2019_Renault_Clio_Iconic_TCe_90_1.0_Front.jpg"},
-    {"ad": "Ford Focus", "kat": "COMPACT • KONFOR", "vites": "Otomatik", "yakit": "Benzin", "fiyat": 1200, "puan": "4.8", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/2019_Ford_Focus_ST-Line_X_1.5_Front.jpg/800px-2019_Ford_Focus_ST-Line_X_1.5_Front.jpg"},
-    {"ad": "Fiat Egea Cross", "kat": "CROSSOVER • EKONOMİK", "vites": "Manuel", "yakit": "Dizel", "fiyat": 850, "puan": "4.6", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/2021_Fiat_Tipo_Cross_1.0_Front.jpg/800px-2021_Fiat_Tipo_Cross_1.0_Front.jpg"},
-    {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500, "puan": "5.0", "koltuk": "5 Koltuk", "bagaj": "3 Valiz", "resim": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&auto=format&fit=crop"}
+    {
+        "ad": "Peugeot 508 GT", 
+        "kat": "SEDAN • PREMİUM", 
+        "vites": "Otomatik", 
+        "yakit": "Dizel", 
+        "fiyat": 1500, 
+        "puan": "4.9", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "2 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80"
+    },
+    {
+        "ad": "Renault Clio", 
+        "kat": "HATCHBACK • EKONOMİK", 
+        "vites": "Manuel", 
+        "yakit": "Benzin", 
+        "fiyat": 900, 
+        "puan": "4.7", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "1 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=600&auto=format&fit=crop&q=80"
+    },
+    {
+        "ad": "Ford Focus", 
+        "kat": "COMPACT • KONFOR", 
+        "vites": "Otomatik", 
+        "yakit": "Benzin", 
+        "fiyat": 1200, 
+        "puan": "4.8", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "2 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80"
+    },
+    {
+        "ad": "Fiat Egea Cross", 
+        "kat": "CROSSOVER • EKONOMİK", 
+        "vites": "Manuel", 
+        "yakit": "Dizel", 
+        "fiyat": 850, 
+        "puan": "4.6", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "2 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop&q=80"
+    },
+    {
+        "ad": "Tesla Model 3", 
+        "kat": "LÜKS • %100 ELEKTRİK", 
+        "vites": "Otomatik", 
+        "yakit": "Elektrik", 
+        "fiyat": 2500, 
+        "puan": "5.0", 
+        "koltuk": "5 Koltuk", 
+        "bagaj": "3 Valiz", 
+        "resim": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=600&auto=format&fit=crop&q=80"
+    }
 ]
 
 if 'kullanici' not in st.session_state:
@@ -233,7 +303,6 @@ if st.session_state['kullanici'] is None:
 
 # ==================== 2. ANA UYGULAMA ====================
 else:
-    # Üst Bilgi Barı
     col_user, col_logout = st.columns([3, 1])
     with col_user:
         st.markdown(f"👋 **{st.session_state['kullanici']['ad']}**")
@@ -247,8 +316,6 @@ else:
     # ---------- TAB 1: ARAÇ KİRALAMA EKRANI ----------
     with tab1:
         st.markdown('<div class="search-glass">', unsafe_allow_html=True)
-        
-        # YENİ EKLENEN: KONUM SEÇİCİ
         secilen_konum = st.selectbox("📍 Alış ve Teslim Noktası", [
             "İstanbul • Sabiha Gökçen HL",
             "İstanbul • İstanbul Havalimanı",
@@ -272,31 +339,43 @@ else:
 
             toplam_fiyat = arac["fiyat"] * gun
             
+            # SAĞA RESİM YERLEŞTİRİLMİŞ KART TASARIMI
             card_html = f"""
             <div class="car-card-modern">
-                <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                     <span class="car-cat">{arac['kat']}</span>
                     <span class="rating-pill">★ {arac['puan']}</span>
                 </div>
-                <div class="car-title-text">{arac['ad']}</div>
-                <img src="{arac['resim']}" class="car-photo" alt="{arac['ad']}"/>
-                <div class="pill-box">
-                    <span class="tag-item">🔀 {arac['vites']}</span>
-                    <span class="tag-item">⛽ {arac['yakit']}</span>
-                    <span class="tag-item">👥 {arac['koltuk']}</span>
-                    <span class="tag-item">🧳 {arac['bagaj']}</span>
+                
+                <div class="card-split-container">
+                    <!-- SOL TARAF: METİNLER VE ETİKETLER -->
+                    <div class="card-left-content">
+                        <div class="car-title-text">{arac['ad']}</div>
+                        <div class="pill-box">
+                            <span class="tag-item">🔀 {arac['vites']}</span>
+                            <span class="tag-item">⛽ {arac['yakit']}</span>
+                            <span class="tag-item">👥 {arac['koltuk']}</span>
+                            <span class="tag-item">🧳 {arac['bagaj']}</span>
+                        </div>
+                        <div>
+                            <span class="guarantee-tag">✓ Ücretsiz İptal</span>
+                        </div>
+                    </div>
+                    
+                    <!-- SAĞ TARAF: YEŞİL KUTUNUN OLDUĞU ARAÇ RESMİ ALANI -->
+                    <div class="card-right-image-box">
+                        <img src="{arac['resim']}" class="car-photo-right" alt="{arac['ad']}"/>
+                    </div>
                 </div>
-                <div>
-                    <span class="guarantee-tag">✓ Sınırsız KM & Ücretsiz İptal</span>
-                </div>
+
                 <div class="price-row">
                     <div>
-                        <div style="font-size: 11px; color: #64748B; font-weight: 600;">GÜNLÜK</div>
-                        <div style="font-size: 18px; font-weight: 800; color: #2563EB;">{arac['fiyat']:,} ₺</div>
+                        <div style="font-size: 10px; color: #64748B; font-weight: 700;">GÜNLÜK</div>
+                        <div style="font-size: 17px; font-weight: 800; color: #2563EB;">{arac['fiyat']:,} ₺</div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 11px; color: #64748B; font-weight: 600;">{gun} GÜNLÜK TOPLAM</div>
-                        <div style="font-size: 18px; font-weight: 900; color: #0F172A;">{toplam_fiyat:,} ₺</div>
+                        <div style="font-size: 10px; color: #64748B; font-weight: 700;">{gun} GÜNLÜK TOPLAM</div>
+                        <div style="font-size: 17px; font-weight: 900; color: #0F172A;">{toplam_fiyat:,} ₺</div>
                     </div>
                 </div>
             </div>
@@ -309,7 +388,7 @@ else:
                     "Musteri": st.session_state['kullanici']['ad'],
                     "TC": st.session_state['kullanici']['tc'],
                     "Telefon": st.session_state['kullanici']['tel'],
-                    "Konum": secilen_konum, # KONUM BİLGİSİ VERİTABANINA YAZILIYOR
+                    "Konum": secilen_konum,
                     "Arac": arac['ad'],
                     "Gun": gun,
                     "ToplamTutar": toplam_fiyat
@@ -326,7 +405,6 @@ else:
             user_df = df[df['TC'].astype(str) == str(st.session_state['kullanici']['tc'])]
             if not user_df.empty:
                 for idx, row in user_df.iterrows():
-                    # Eski kayıtlarda konum yoksa hata vermemesi için güvenlik önlemi
                     konum_yazisi = row['Konum'] if 'Konum' in df.columns else "İstanbul • Sabiha Gökçen HL"
                     
                     rec_html = f"""

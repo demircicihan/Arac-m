@@ -64,6 +64,7 @@ st.markdown("""
         margin-bottom: 20px !important;
     }
 
+    /* MODERN SADE ARAÇ KARTI TASARIMI (FOTOĞRAFSIZ) */
     .car-card-modern {
         background-color: #FFFFFF !important;
         padding: 18px !important;
@@ -71,34 +72,6 @@ st.markdown("""
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
         border: 1px solid #E2E8F0 !important;
         margin-bottom: 12px !important;
-    }
-
-    .card-split-container {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        gap: 10px !important;
-        margin-bottom: 10px !important;
-    }
-
-    .card-left-content {
-        flex: 1 1 56% !important;
-    }
-
-    .card-right-image-box {
-        flex: 1 1 44% !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-    }
-
-    .car-photo-right {
-        width: 100% !important;
-        height: 105px !important;
-        object-fit: cover !important;
-        border-radius: 14px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-        border: 1px solid #F1F5F9 !important;
     }
 
     .car-cat {
@@ -118,26 +91,26 @@ st.markdown("""
     }
 
     .car-title-text {
-        font-size: 19px !important;
+        font-size: 20px !important;
         font-weight: 900 !important;
         color: #0F172A !important;
-        margin: 2px 0 6px 0 !important;
+        margin: 4px 0 8px 0 !important;
     }
 
     .pill-box {
         display: flex !important;
-        gap: 4px !important;
+        gap: 6px !important;
         flex-wrap: wrap !important;
-        margin-bottom: 6px !important;
+        margin-bottom: 10px !important;
     }
 
     .tag-item {
         background: #F1F5F9 !important;
         color: #334155 !important;
-        font-size: 11px !important;
+        font-size: 12px !important;
         font-weight: 700 !important;
-        padding: 3px 6px !important;
-        border-radius: 6px !important;
+        padding: 5px 10px !important;
+        border-radius: 8px !important;
     }
 
     .guarantee-tag {
@@ -145,9 +118,10 @@ st.markdown("""
         background: #ECFDF5 !important;
         font-weight: 700 !important;
         font-size: 11px !important;
-        padding: 3px 6px !important;
+        padding: 4px 8px !important;
         border-radius: 6px !important;
         display: inline-block !important;
+        margin-bottom: 8px !important;
     }
 
     .price-row {
@@ -210,62 +184,13 @@ else:
         df['Konum'] = "İstanbul • Sabiha Gökçen HL"
         df.to_csv(DATA_FILE, index=False)
 
+# ARAÇ FLOSU (FOTOĞRAFSIZ)
 ARACLAR = [
-    {
-        "ad": "Peugeot 508 GT", 
-        "kat": "SEDAN • PREMİUM", 
-        "vites": "Otomatik", 
-        "yakit": "Dizel", 
-        "fiyat": 1500, 
-        "puan": "4.9", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "2 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80"
-    },
-    {
-        "ad": "Renault Clio", 
-        "kat": "HATCHBACK • EKONOMİK", 
-        "vites": "Manuel", 
-        "yakit": "Benzin", 
-        "fiyat": 900, 
-        "puan": "4.7", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "1 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=600&auto=format&fit=crop&q=80"
-    },
-    {
-        "ad": "Ford Focus", 
-        "kat": "COMPACT • KONFOR", 
-        "vites": "Otomatik", 
-        "yakit": "Benzin", 
-        "fiyat": 1200, 
-        "puan": "4.8", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "2 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80"
-    },
-    {
-        "ad": "Fiat Egea Cross", 
-        "kat": "CROSSOVER • EKONOMİK", 
-        "vites": "Manuel", 
-        "yakit": "Dizel", 
-        "fiyat": 850, 
-        "puan": "4.6", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "2 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop&q=80"
-    },
-    {
-        "ad": "Tesla Model 3", 
-        "kat": "LÜKS • %100 ELEKTRİK", 
-        "vites": "Otomatik", 
-        "yakit": "Elektrik", 
-        "fiyat": 2500, 
-        "puan": "5.0", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "3 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=600&auto=format&fit=crop&q=80"
-    }
+    {"ad": "Peugeot 508 GT", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500, "puan": "4.9", "koltuk": "5 Koltuk", "bagaj": "2 Valiz"},
+    {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900, "puan": "4.7", "koltuk": "5 Koltuk", "bagaj": "1 Valiz"},
+    {"ad": "Ford Focus", "kat": "COMPACT • KONFOR", "vites": "Otomatik", "yakit": "Benzin", "fiyat": 1200, "puan": "4.8", "koltuk": "5 Koltuk", "bagaj": "2 Valiz"},
+    {"ad": "Fiat Egea Cross", "kat": "CROSSOVER • EKONOMİK", "vites": "Manuel", "yakit": "Dizel", "fiyat": 850, "puan": "4.6", "koltuk": "5 Koltuk", "bagaj": "2 Valiz"},
+    {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500, "puan": "5.0", "koltuk": "5 Koltuk", "bagaj": "3 Valiz"}
 ]
 
 if 'kullanici' not in st.session_state:
@@ -327,8 +252,8 @@ else:
 
             toplam_fiyat = arac["fiyat"] * gun
             
-            # TEK SATIR HATA VERMEYEN HTML MİMARİSİ
-            card_html = f"""<div class="car-card-modern"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><span class="car-cat">{arac['kat']}</span><span class="rating-pill">★ {arac['puan']}</span></div><div class="card-split-container"><div class="card-left-content"><div class="car-title-text">{arac['ad']}</div><div class="pill-box"><span class="tag-item">🔀 {arac['vites']}</span><span class="tag-item">⛽ {arac['yakit']}</span><span class="tag-item">👥 {arac['koltuk']}</span><span class="tag-item">🧳 {arac['bagaj']}</span></div><div><span class="guarantee-tag">✓ Ücretsiz İptal</span></div></div><div class="card-right-image-box"><img src="{arac['resim']}" class="car-photo-right" alt="{arac['ad']}"/></div></div><div class="price-row"><div><div style="font-size: 10px; color: #64748B; font-weight: 700;">GÜNLÜK</div><div style="font-size: 17px; font-weight: 800; color: #2563EB;">{arac['fiyat']:,} ₺</div></div><div style="text-align: right;"><div style="font-size: 10px; color: #64748B; font-weight: 700;">{gun} GÜNLÜK TOPLAM</div><div style="font-size: 17px; font-weight: 900; color: #0F172A;">{toplam_fiyat:,} ₺</div></div></div></div>"""
+            # SADE VE FOTOĞRAFSIZ KART YAPISI
+            card_html = f"""<div class="car-card-modern"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><span class="car-cat">{arac['kat']}</span><span class="rating-pill">★ {arac['puan']}</span></div><div class="car-title-text">{arac['ad']}</div><div class="pill-box"><span class="tag-item">🔀 {arac['vites']}</span><span class="tag-item">⛽ {arac['yakit']}</span><span class="tag-item">👥 {arac['koltuk']}</span><span class="tag-item">🧳 {arac['bagaj']}</span></div><div><span class="guarantee-tag">✓ Sınırsız KM & Ücretsiz İptal</span></div><div class="price-row"><div><div style="font-size: 10px; color: #64748B; font-weight: 700;">GÜNLÜK</div><div style="font-size: 17px; font-weight: 800; color: #2563EB;">{arac['fiyat']:,} ₺</div></div><div style="text-align: right;"><div style="font-size: 10px; color: #64748B; font-weight: 700;">{gun} GÜNLÜK TOPLAM</div><div style="font-size: 17px; font-weight: 900; color: #0F172A;">{toplam_fiyat:,} ₺</div></div></div></div>"""
             
             st.markdown(card_html, unsafe_allow_html=True)
             

@@ -11,11 +11,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ULTRA MODERN iOS, WALLET & SEGMENTED CONTROL CSS
+# ULTRA MODERN CANLI RENKLİ iOS GLASSMORPHISM CSS
 st.markdown("""
     <style>
+    /* Arka Plan Degradesi */
     .stApp {
-        background: linear-gradient(180deg, #E0E7FF 0%, #F1F5F9 35%, #F8FAFC 100%) !important;
+        background: linear-gradient(160deg, #E0E7FF 0%, #EEF2FF 40%, #F8FAFC 100%) !important;
         background-attachment: fixed !important;
     }
     
@@ -29,14 +30,15 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif !important;
     }
 
-    /* iOS Tarzı Üst Menü (Segmented Control) */
+    /* iOS Segmented Control Sekme Menüsü */
     div[data-baseweb="tab-list"] {
-        background-color: rgba(226, 232, 240, 0.6) !important;
-        backdrop-filter: blur(10px) !important;
+        background-color: rgba(199, 210, 254, 0.5) !important;
+        backdrop-filter: blur(12px) !important;
         border-radius: 20px !important;
         padding: 6px !important;
         gap: 4px !important;
         margin-bottom: 20px !important;
+        border: 1px solid rgba(255,255,255,0.8) !important;
     }
     div[data-baseweb="tab"] {
         background-color: transparent !important;
@@ -46,15 +48,15 @@ st.markdown("""
         margin: 0 !important;
     }
     div[aria-selected="true"] {
-        background-color: #FFFFFF !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%) !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15) !important;
     }
     div[aria-selected="true"] p {
         color: #2563EB !important;
         font-weight: 900 !important;
     }
     div[aria-selected="false"] p {
-        color: #64748B !important;
+        color: #475569 !important;
         font-weight: 700 !important;
     }
 
@@ -63,25 +65,14 @@ st.markdown("""
         padding: 24px 20px !important;
         border-radius: 24px !important;
         color: #FFFFFF !important;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.2) !important;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22) !important;
         margin-bottom: 20px !important;
         position: relative;
         overflow: hidden;
     }
-    
-    .hero-header::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 200px;
-        height: 200px;
-        background: radial-gradient(circle, rgba(37,99,235,0.4) 0%, rgba(0,0,0,0) 70%);
-        border-radius: 50%;
-    }
 
     .status-badge {
-        background: rgba(255, 255, 255, 0.15) !important;
+        background: rgba(255, 255, 255, 0.18) !important;
         backdrop-filter: blur(10px) !important;
         padding: 6px 14px !important;
         border-radius: 20px !important;
@@ -89,11 +80,187 @@ st.markdown("""
         font-weight: 800 !important;
         display: inline-block !important;
         margin-bottom: 12px !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
         color: #FFFFFF !important;
     }
 
-    /* Giriş Ekranı Güven Rozetleri */
+    /* RENKLENDİRİLMİŞ ARAMA PANANELİ */
+    .search-glass {
+        background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(238,242,255,0.95) 100%) !important;
+        backdrop-filter: blur(16px) !important;
+        padding: 20px !important;
+        border-radius: 24px !important;
+        border: 1.5px solid #C7D2FE !important;
+        box-shadow: 0 12px 35px rgba(37, 99, 235, 0.1) !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* RENKLENDİRİLMİŞ ÖZEL LÜKS ARAÇ KARTI (Düz beyaz yerine canlı geçiş) */
+    .car-card-modern {
+        background: linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 60%, #EEF2FF 100%) !important;
+        padding: 22px !important;
+        border-radius: 26px !important;
+        box-shadow: 0 14px 35px rgba(30, 27, 75, 0.07) !important;
+        border: 1.5px solid #E0E7FF !important;
+        margin-bottom: 18px !important;
+    }
+
+    /* RENKLİ AVATAR KUTUSU */
+    .car-avatar-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+        padding-bottom: 14px;
+        border-bottom: 1.5px solid #E2E8F0;
+    }
+    .car-avatar {
+        font-size: 38px;
+        background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%);
+        width: 72px;
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 22px;
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.15);
+        border: 1px solid #A5B4FC;
+    }
+
+    .car-cat {
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        color: #2563EB !important;
+        letter-spacing: 1px !important;
+        text-transform: uppercase;
+    }
+
+    .rating-pill {
+        background: #FEF3C7 !important;
+        color: #B45309 !important;
+        font-weight: 900 !important;
+        font-size: 12px !important;
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
+        border: 1px solid #FDE68A;
+        display: inline-block;
+        margin-top: 4px;
+    }
+
+    .car-title-text {
+        font-size: 21px !important;
+        font-weight: 900 !important;
+        color: #0F172A !important;
+        margin-bottom: 2px !important;
+    }
+
+    /* RENKLİ ÖZEL ROZETLER (PASTEL TAGS) */
+    .pill-box {
+        display: flex !important;
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+        margin-bottom: 14px !important;
+    }
+
+    .tag-vites {
+        background: #EFF6FF !important;
+        color: #1D4ED8 !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        padding: 6px 12px !important;
+        border-radius: 10px !important;
+        border: 1px solid #BFDBFE !important;
+    }
+
+    .tag-yakit {
+        background: #FEF3C7 !important;
+        color: #B45309 !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        padding: 6px 12px !important;
+        border-radius: 10px !important;
+        border: 1px solid #FDE68A !important;
+    }
+
+    .tag-koltuk {
+        background: #F3E8FF !important;
+        color: #6B21A8 !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        padding: 6px 12px !important;
+        border-radius: 10px !important;
+        border: 1px solid #E9D5FF !important;
+    }
+
+    .tag-bagaj {
+        background: #ECFDF5 !important;
+        color: #047857 !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        padding: 6px 12px !important;
+        border-radius: 10px !important;
+        border: 1px solid #A7F3D0 !important;
+    }
+
+    .guarantee-tag {
+        color: #047857 !important;
+        background: #D1FAE5 !important;
+        font-weight: 800 !important;
+        font-size: 12px !important;
+        padding: 6px 12px !important;
+        border-radius: 10px !important;
+        display: inline-flex !important;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 14px !important;
+        border: 1px solid #6EE7B7;
+    }
+
+    /* RENKLİ FİYAT KUTUSU (SAFİR MAVİSİ ŞERİT) */
+    .price-row {
+        background: linear-gradient(135deg, #EFF6FF 0%, #E0E7FF 100%) !important;
+        padding: 14px 18px !important;
+        border-radius: 18px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        border: 1px solid #BFDBFE !important;
+    }
+
+    div.stButton > button {
+        width: 100% !important;
+        background: linear-gradient(135deg, #FF6B00 0%, #FF5F00 100%) !important;
+        color: #FFFFFF !important;
+        font-weight: 900 !important;
+        font-size: 16px !important;
+        border-radius: 16px !important;
+        border: none !important;
+        padding: 14px !important;
+        box-shadow: 0 8px 25px rgba(255, 95, 0, 0.35) !important;
+        margin-top: 12px !important;
+    }
+
+    div.stFormSubmitButton > button {
+        width: 100% !important;
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+        color: #FFFFFF !important;
+        font-weight: 900 !important;
+        font-size: 16px !important;
+        border-radius: 16px !important;
+        border: none !important;
+        padding: 14px !important;
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35) !important;
+    }
+
+    .stTextInput>div>div>input, .stNumberInput>div>div>input, div[data-baseweb="select"]>div {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-radius: 14px !important;
+        border: 1.5px solid #C7D2FE !important;
+        font-weight: 800 !important;
+        padding: 10px !important;
+    }
+    
     .trust-badges {
         display: flex;
         justify-content: center;
@@ -108,168 +275,11 @@ st.markdown("""
         font-weight: 800;
         padding: 6px 12px;
         border-radius: 20px;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .search-glass {
-        background: rgba(255, 255, 255, 0.85) !important;
-        backdrop-filter: blur(16px) !important;
-        padding: 20px !important;
-        border-radius: 24px !important;
-        border: 1px solid #FFFFFF !important;
-        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.08) !important;
-        margin-bottom: 20px !important;
-    }
-
-    .car-card-modern {
-        background-color: #FFFFFF !important;
-        padding: 20px !important;
-        border-radius: 24px !important;
-        box-shadow: 0 12px 35px rgba(15, 23, 42, 0.06) !important;
-        border: 1px solid #F1F5F9 !important;
-        margin-bottom: 16px !important;
-        transition: transform 0.2s ease;
-    }
-
-    /* ARAÇ AVATAR KUTUSU (Fotoğraf yerine) */
-    .car-avatar-container {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #F1F5F9;
-    }
-    .car-avatar {
-        font-size: 38px;
-        background: linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%);
-        width: 70px;
-        height: 70px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 20px;
-        box-shadow: inset 0 2px 4px #FFFFFF, 0 4px 10px rgba(0,0,0,0.06);
-        border: 1px solid #E2E8F0;
-    }
-
-    .car-cat {
-        font-size: 11px !important;
-        font-weight: 800 !important;
-        color: #64748B !important;
-        letter-spacing: 1px !important;
-        text-transform: uppercase;
-    }
-
-    .rating-pill {
-        background: #FEF3C7 !important;
-        color: #D97706 !important;
-        font-weight: 900 !important;
-        font-size: 12px !important;
-        padding: 4px 10px !important;
-        border-radius: 12px !important;
-        display: inline-block;
-        margin-top: 4px;
-    }
-
-    .car-title-text {
-        font-size: 20px !important;
-        font-weight: 900 !important;
-        color: #0F172A !important;
-        margin-bottom: 2px !important;
-    }
-
-    .pill-box {
-        display: flex !important;
-        gap: 6px !important;
-        flex-wrap: wrap !important;
-        margin-bottom: 12px !important;
-    }
-
-    .tag-item {
-        background: #F8FAFC !important;
-        color: #334155 !important;
-        font-size: 12px !important;
-        font-weight: 800 !important;
-        padding: 6px 12px !important;
-        border-radius: 10px !important;
-        border: 1px solid #E2E8F0 !important;
-    }
-
-    .guarantee-tag {
-        color: #059669 !important;
-        background: #ECFDF5 !important;
-        font-weight: 800 !important;
-        font-size: 12px !important;
-        padding: 6px 12px !important;
-        border-radius: 10px !important;
-        display: inline-flex !important;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 12px !important;
-        border: 1px solid #A7F3D0;
-    }
-
-    .price-row {
-        background: #F8FAFC;
-        padding: 14px !important;
-        border-radius: 16px;
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-    }
-
-    div.stButton > button {
-        width: 100% !important;
-        background: linear-gradient(135deg, #FF6B00 0%, #FF5F00 100%) !important;
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-        font-size: 16px !important;
-        border-radius: 16px !important;
-        border: none !important;
-        padding: 14px !important;
-        box-shadow: 0 8px 25px rgba(255, 95, 0, 0.3) !important;
-        margin-top: 12px !important;
-        transition: transform 0.1s;
-    }
-    div.stButton > button:active {
-        transform: scale(0.97);
-    }
-
-    div.stFormSubmitButton > button {
-        width: 100% !important;
-        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-        font-size: 16px !important;
-        border-radius: 16px !important;
-        border: none !important;
-        padding: 14px !important;
-        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3) !important;
-    }
-
-    .stTextInput>div>div>input, .stNumberInput>div>div>input, div[data-baseweb="select"]>div {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border-radius: 14px !important;
-        border: 1.5px solid #E2E8F0 !important;
-        font-weight: 800 !important;
-        padding: 12px !important;
-        transition: border-color 0.2s;
     }
     
-    .stTextInput>div>div>input:focus, div[data-baseweb="select"]>div:focus-within {
-        border-color: #2563EB !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
-    }
-    
-    /* APPLE WALLET BARKOD STİLİ */
     .wallet-barcode {
-        font-family: "Libre Barcode 39", monospace, sans-serif;
-        font-size: 28px;
-        letter-spacing: 2px;
+        font-size: 26px;
+        letter-spacing: 3px;
         color: #FFFFFF;
         opacity: 0.6;
         text-align: center;
@@ -291,7 +301,6 @@ else:
         df['Konum'] = "İstanbul • Sabiha Gökçen HL"
         df.to_csv(DATA_FILE, index=False)
 
-# ARAÇ FLOSU (FOTOĞRAFSIZ, AVATAR İKONLU)
 ARACLAR = [
     {"ad": "Peugeot 508 GT", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500, "puan": "4.9", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "ikon": "🚘"},
     {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900, "puan": "4.7", "koltuk": "5 Koltuk", "bagaj": "1 Valiz", "ikon": "🚗"},
@@ -323,7 +332,6 @@ if st.session_state['kullanici'] is None:
             else:
                 st.error("Lütfen bilgileri eksiksiz girin (TC: 11 hane, Tel: 10 hane).")
     
-    # Giriş Ekranı Trust Badges (Güven Rozetleri)
     trust_html = """<div class="trust-badges"><span class="trust-pill">⚡ Anında Onay</span><span class="trust-pill">🛡️ Tam Kasko</span><span class="trust-pill">🚫 Gizli Ücret Yok</span></div>"""
     st.markdown(trust_html, unsafe_allow_html=True)
 
@@ -365,8 +373,8 @@ else:
 
             toplam_fiyat = arac["fiyat"] * gun
             
-            # DETAYLANDIRILMIŞ YENİ AVATARLI KART YAPISI
-            card_html = f"""<div class="car-card-modern"><div class="car-avatar-container"><div class="car-avatar">{arac['ikon']}</div><div><div class="car-title-text">{arac['ad']}</div><div class="car-cat">{arac['kat']}</div><div class="rating-pill">★ {arac['puan']} Müşteri Puanı</div></div></div><div class="pill-box"><span class="tag-item">🔀 {arac['vites']}</span><span class="tag-item">⛽ {arac['yakit']}</span><span class="tag-item">👥 {arac['koltuk']}</span><span class="tag-item">🧳 {arac['bagaj']}</span></div><div><span class="guarantee-tag">✓ Sınırsız KM & Ücretsiz İptal Güvencesi</span></div><div class="price-row"><div><div style="font-size: 11px; color: #64748B; font-weight: 800;">GÜNLÜK ÜCRET</div><div style="font-size: 18px; font-weight: 900; color: #2563EB;">{arac['fiyat']:,} ₺</div></div><div style="text-align: right;"><div style="font-size: 11px; color: #64748B; font-weight: 800;">{gun} GÜNLÜK TOPLAM</div><div style="font-size: 20px; font-weight: 900; color: #0F172A;">{toplam_fiyat:,} ₺</div></div></div></div>"""
+            # RENKLENDİRİLMİŞ CANLI KART HTML YAPISI
+            card_html = f"""<div class="car-card-modern"><div class="car-avatar-container"><div class="car-avatar">{arac['ikon']}</div><div><div class="car-title-text">{arac['ad']}</div><div class="car-cat">{arac['kat']}</div><div class="rating-pill">★ {arac['puan']} Müşteri Puanı</div></div></div><div class="pill-box"><span class="tag-vites">🔀 {arac['vites']}</span><span class="tag-yakit">⛽ {arac['yakit']}</span><span class="tag-koltuk">👥 {arac['koltuk']}</span><span class="tag-bagaj">🧳 {arac['bagaj']}</span></div><div><span class="guarantee-tag">✓ Sınırsız KM & Ücretsiz İptal Güvencesi</span></div><div class="price-row"><div><div style="font-size: 11px; color: #475569; font-weight: 800;">GÜNLÜK ÜCRET</div><div style="font-size: 18px; font-weight: 900; color: #2563EB;">{arac['fiyat']:,} ₺</div></div><div style="text-align: right;"><div style="font-size: 11px; color: #475569; font-weight: 800;">{gun} GÜNLÜK TOPLAM</div><div style="font-size: 20px; font-weight: 900; color: #0F172A;">{toplam_fiyat:,} ₺</div></div></div></div>"""
             
             st.markdown(card_html, unsafe_allow_html=True)
             
@@ -400,8 +408,8 @@ else:
             else:
                 st.info("Aktif veya geçmiş bir kiralamanız bulunmuyor.")
 
-    # ---------- TAB 3: DİJİTAL SÜRÜCÜ KARTI (APPLE WALLET STİLİ) ----------
+    # ---------- TAB 3: DİJİTAL SÜRÜCÜ KARTI ----------
     with tab3:
         k = st.session_state['kullanici']
-        card_driver = f"""<div class="hero-header" style="padding: 24px !important;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;"><span style="font-size: 14px; font-weight: 900; letter-spacing: 2px; color:#93C5FD; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px;">DRIVENOW PREMIUM</span><span style="font-size: 28px; background: #FFF; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">💎</span></div><div style="margin-bottom: 20px;"><div style="font-size: 11px; font-weight: 800; opacity: 0.7; color:#FFF; letter-spacing: 1px;">SÜRÜCÜ AD SOYAD</div><div style="font-size: 24px; font-weight: 900; color:#FFF; text-transform: uppercase;">{k['ad']}</div></div><div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 16px;"><div><div style="font-size: 11px; font-weight: 800; opacity: 0.7; color:#FFF; letter-spacing: 1px;">T.C. KİMLİK NO</div><div style="font-size: 16px; font-weight: 800; color:#FFF;">{k['tc']}</div></div><div><div style="font-size: 11px; font-weight: 800; opacity: 0.7; color:#FFF; letter-spacing: 1px;">TELEFON</div><div style="font-size: 16px; font-weight: 800; color:#FFF;">+90 {k['tel']}</div></div></div><div class="wallet-barcode">||| |||| || ||| || |||| |</div></div>"""
+        card_driver = f"""<div class="hero-header" style="padding: 24px !important;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;"><span style="font-size: 14px; font-weight: 900; letter-spacing: 2px; color:#93C5FD; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px;">DRIVENOW PREMIUM</span><span style="font-size: 28px; background: #FFF; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">💎</span></div><div style="margin-bottom: 20px;"><div style="font-size: 11px; font-weight: 800; opacity: 0.7; color:#FFF; letter-spacing: 1px;">SÜRÜCÜ AD SOYAD</div><div style="font-size: 24px; font-weight: 900; color:#FFF; text-transform: uppercase;">{k['ad']}</div></div><div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 16px;"><div><div style="font-size: 11px; font-weight: 800; opacity: 0.7; color:#FFF; letter-spacing: 1px;">T.C. KİMLİK NO</div><div style="font-size: 16px; font-weight: 800; color:#FFF;">{k['tc']}</div></div><div><div style="font-size: 11px; opacity: 0.7; color:#FFF;">TELEFON</div><div style="font-size: 16px; font-weight: 800; color:#FFF;">+90 {k['tel']}</div></div></div><div class="wallet-barcode">||| |||| || ||| || |||| |</div></div>"""
         st.markdown(card_driver, unsafe_allow_html=True)

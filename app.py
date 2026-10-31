@@ -23,7 +23,7 @@ if not os.path.exists(LOG_FILE):
     with open(LOG_FILE, "w", encoding="utf-8-sig") as f:
         f.write("")
 
-# --- ZENGİN ARAÇ FİLOSU ---
+# --- DETAYLANDIRILMIŞ ULTRA ARAÇ FİLOSU ---
 ARACLAR = [
     {
         "ad": "Peugeot 508 GT",
@@ -35,6 +35,11 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "2 Valiz",
         "badge": "🔥 EN ÇOK TERCİH EDİLEN",
+        "motor": "1.5 BlueHDi (130 HP)",
+        "sanziman": "8 İleri EAT8",
+        "tuketim": "4.1 Lt / 100km",
+        "hizlanma": "0-100 km/s: 9.9 sn",
+        "donanimlar": ["Massage Seat", "Focal® Hi-Fi", "Night Vision", "Kör Nokta"],
     },
     {
         "ad": "Tesla Model 3",
@@ -46,6 +51,11 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "3 Valiz",
         "badge": "⚡ TEKNOLOJİ HARİKASI",
+        "motor": "Dual Motor AWD (283 HP)",
+        "sanziman": "Tek Vitesli Otomatik",
+        "tuketim": "14.4 kWh / 100km",
+        "hizlanma": "0-100 km/s: 6.1 sn",
+        "donanimlar": ["Autopilot", "Cam Tavan", "15\" Dokunmatik Ekran", "Koltuk Isıtma"],
     },
     {
         "ad": "Ford Focus",
@@ -57,6 +67,11 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "2 Valiz",
         "badge": "🌟 AİLE DOSTU",
+        "motor": "1.5 Ti-VCT (123 HP)",
+        "sanziman": "6 İleri Otomatik",
+        "tuketim": "6.2 Lt / 100km",
+        "hizlanma": "0-100 km/s: 11.2 sn",
+        "donanimlar": ["SYNC 4 Ekran", "Şerit Takip", "Geri Görüş Kamerası", "Hız Sabitleyici"],
     },
     {
         "ad": "Renault Clio",
@@ -68,6 +83,11 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "1 Valiz",
         "badge": "💡 ŞEHİR DOSTU",
+        "motor": "1.0 TCe (90 HP)",
+        "sanziman": "6 İleri Manuel",
+        "tuketim": "5.0 Lt / 100km",
+        "hizlanma": "0-100 km/s: 12.2 sn",
+        "donanimlar": ["Apple CarPlay", "Park Sensörü", "Start-Stop", "EASYLINK"],
     },
     {
         "ad": "Fiat Egea Cross",
@@ -79,6 +99,11 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "2 Valiz",
         "badge": "🛣️ UYGUN & MUKAVEMETLİ",
+        "motor": "1.3 MultiJet (95 HP)",
+        "sanziman": "5 İleri Manuel",
+        "tuketim": "4.4 Lt / 100km",
+        "hizlanma": "0-100 km/s: 12.8 sn",
+        "donanimlar": ["Yüksek Sürüş Pozisyonu", "City Modu", "10\" Tablet Ekran", "Tavan Çıtaları"],
     },
 ]
 
@@ -142,10 +167,40 @@ st.markdown(
         letter-spacing: 0.5px !important;
     }
 
-    .tag-vites { background: rgba(59, 130, 246, 0.15) !important; color: #93C5FD !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(147, 197, 253, 0.2); display: inline-block; margin-right: 6px; }
-    .tag-yakit { background: rgba(245, 158, 11, 0.15) !important; color: #FDE68A !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(253, 230, 138, 0.2); display: inline-block; margin-right: 6px; }
-    .tag-koltuk { background: rgba(168, 85, 247, 0.15) !important; color: #E9D5FF !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(233, 213, 255, 0.2); display: inline-block; margin-right: 6px; }
-    .tag-bagaj { background: rgba(16, 185, 129, 0.15) !important; color: #A7F3D0 !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(167, 243, 208, 0.2); display: inline-block; }
+    .tag-vites { background: rgba(59, 130, 246, 0.15) !important; color: #93C5FD !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(147, 197, 253, 0.2); display: inline-block; margin-right: 6px; margin-bottom: 6px; }
+    .tag-yakit { background: rgba(245, 158, 11, 0.15) !important; color: #FDE68A !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(253, 230, 138, 0.2); display: inline-block; margin-right: 6px; margin-bottom: 6px; }
+    .tag-koltuk { background: rgba(168, 85, 247, 0.15) !important; color: #E9D5FF !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(233, 213, 255, 0.2); display: inline-block; margin-right: 6px; margin-bottom: 6px; }
+    .tag-bagaj { background: rgba(16, 185, 129, 0.15) !important; color: #A7F3D0 !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(167, 243, 208, 0.2); display: inline-block; margin-bottom: 6px; }
+
+    /* TEKNİK ÖZELLİK ETİKETLERİ */
+    .tech-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        background: rgba(15, 23, 42, 0.4);
+        padding: 12px;
+        border-radius: 14px;
+        margin: 10px 0;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .tech-item {
+        font-size: 12px;
+        color: #CBD5E1 !important;
+        font-weight: 600;
+    }
+
+    .feature-chip {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #E2E8F0 !important;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-right: 4px;
+        margin-top: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
 
     .guarantee-badge {
         background: rgba(16, 185, 129, 0.12) !important;
@@ -155,7 +210,7 @@ st.markdown(
         padding: 6px 14px !important;
         border-radius: 12px !important;
         display: inline-block !important;
-        margin-top: 12px !important;
+        margin-top: 10px !important;
         border: 1px solid rgba(52, 211, 153, 0.25) !important;
     }
 
@@ -417,7 +472,7 @@ else:
                 )
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 🚗 ARAÇ LİSTESİ
+            # 🚗 DETAYLI ARAÇ LİSTESİ
             musait_sayisi = 0
             for a in ARACLAR:
                 if vites_filtre != "Tümü" and a["vites"] != vites_filtre:
@@ -426,6 +481,14 @@ else:
                 musait_sayisi += 1
                 toplam_tutar = a["fiyat"] * gun
 
+                # Öne çıkan donanımlar çipleri
+                chips_html = "".join(
+                    [
+                        f'<span class="feature-chip">✨ {d}</span>'
+                        for d in a["donanimlar"]
+                    ]
+                )
+
                 card_html = f"""
                 <div class="car-card-detailed">
                     <div>
@@ -433,14 +496,28 @@ else:
                         <span style="background:rgba(251, 191, 36, 0.2); color:#FBBF24; font-size:12px; font-weight:900; padding:4px 10px; border-radius:10px; float:right; border: 1px solid rgba(251, 191, 36, 0.3);">★ {a['puan']}</span>
                     </div>
                     <div style="font-size:11px; font-weight:900; color:#818CF8; letter-spacing:1px; margin-top:2px;">{a['kat']}</div>
-                    <div style="font-size:26px; font-weight:900; color:#FFFFFF; margin:4px 0 12px 0;">{a['ad']}</div>
-                    <div style="margin-bottom:14px;">
+                    <div style="font-size:26px; font-weight:900; color:#FFFFFF; margin:4px 0 10px 0;">{a['ad']}</div>
+                    
+                    <div>
                         <span class="tag-vites">🔀 {a['vites']}</span>
                         <span class="tag-yakit">⛽ {a['yakit']}</span>
                         <span class="tag-koltuk">👥 {a['koltuk']}</span>
                         <span class="tag-bagaj">🧳 {a['bagaj']}</span>
                     </div>
+
+                    <div class="tech-grid">
+                        <div class="tech-item">⚙️ <b>Motor:</b> {a['motor']}</div>
+                        <div class="tech-item">🕹️ <b>Şanzıman:</b> {a['sanziman']}</div>
+                        <div class="tech-item">⛽ <b>Tüketim:</b> {a['tuketim']}</div>
+                        <div class="tech-item">🚀 <b>Hızlanma:</b> {a['hizlanma']}</div>
+                    </div>
+
+                    <div style="margin-top:6px;">
+                        {chips_html}
+                    </div>
+
                     <div><span class="guarantee-badge">🟢 Anında Teslim • Sınırsız KM • Full Kasko</span></div>
+
                     <div class="price-row-box">
                         <div>
                             <div style="font-size:10px; font-weight:800; color:#94A3B8;">GÜNLÜK BİRİM</div>
@@ -499,8 +576,7 @@ else:
                     "<p style='font-size:16px; font-weight:800; margin-bottom:6px;'>📄 Ehliyet ve Onay Bilgileri</p>",
                     unsafe_allow_html=True,
                 )
-                
-                # ÖDEME BİLGİLENDİRME BÖLÜMÜ
+
                 st.markdown(
                     '<span class="payment-notice-badge">💵 Ödeme İşlemi: Toplam tutar araç teslimatı sırasında nakit veya kredi kartı ile tahsil edilecektir.</span>',
                     unsafe_allow_html=True,

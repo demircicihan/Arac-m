@@ -1,11 +1,10 @@
 import streamlit as st
-import pandas as pd
 from datetime import datetime
 import os
 
 # --- SAYFA AYARLARI ---
 st.set_page_config(
-    page_title="DriveNow Premium",
+    page_title="DriveNow Yönetici Paneli",
     page_icon="🚗",
     layout="centered",
     initial_sidebar_state="collapsed"
@@ -13,23 +12,23 @@ st.set_page_config(
 
 # --- ARAÇ LİSTESİ ---
 ARACLAR = [
-    {"ad": "Peugeot 508 GT", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500, "puan": "4.9"},
-    {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900, "puan": "4.7"},
-    {"ad": "Ford Focus", "kat": "COMPACT • KONFOR", "vites": "Otomatik", "yakit": "Benzin", "fiyat": 1200, "puan": "4.8"},
-    {"ad": "Fiat Egea Cross", "kat": "CROSSOVER • EKONOMİK", "vites": "Manuel", "yakit": "Dizel", "fiyat": 850, "puan": "4.6"},
-    {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500, "puan": "5.0"}
+    {"ad": "Peugeot 508 GT", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500},
+    {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900},
+    {"ad": "Ford Focus", "kat": "COMPACT • KONFOR", "vites": "Otomatik", "yakit": "Benzin", "fiyat": 1200},
+    {"ad": "Fiat Egea Cross", "kat": "CROSSOVER • EKONOMİK", "vites": "Manuel", "yakit": "Dizel", "fiyat": 850},
+    {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500}
 ]
 
-# --- KRİTİK GÖRÜNÜRLÜK AYARLARI (Yazı Netleştirme) ---
+# --- KRİTİK GÖRÜNÜRLÜK AYARLARI (CSS) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #F1F5F9 !important; }
+    .stApp { background-color: #F8FAFC !important; }
     header, footer {visibility: hidden !important;}
     
-    /* Uygulama içi tüm yazıları zorunlu koyu lacivert yap */
+    /* YAZILARI NETLEŞTİR */
     html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, input {
         color: #0F172A !important;
-        font-family: -apple-system, sans-serif !important;
+        font-family: sans-serif !important;
     }
 
     input, div[data-baseweb="select"], .stNumberInput div {
@@ -39,147 +38,126 @@ st.markdown("""
         border-radius: 12px !important;
     }
 
-    .car-card {
+    .card {
         background-color: #FFFFFF !important;
         padding: 20px !important;
-        border-radius: 22px !important;
+        border-radius: 20px !important;
         border: 2px solid #E2E8F0 !important;
         margin-bottom: 15px !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
     }
-    .car-title { font-size: 24px !important; font-weight: 900 !important; margin: 5px 0 !important; }
+
     div.stButton > button {
         background: #FF6B00 !important;
         color: white !important;
-        border-radius: 14px !important;
+        border-radius: 12px !important;
         font-weight: 900 !important;
         height: 50px !important;
         width: 100% !important;
         border: none !important;
     }
-    .vip-card { background: #1E293B !important; padding: 25px !important; border-radius: 20px; }
-    .vip-card * { color: #FFFFFF !important; }
-    div[data-baseweb="tab-list"] { background-color: #E2E8F0 !important; border-radius: 15px; padding: 4px; }
-    div[aria-selected="true"] { background: #FFFFFF !important; border-radius: 12px; }
+    
+    .admin-box {
+        background-color: #F1F5F9 !important;
+        padding: 15px;
+        border-radius: 12px;
+        border-left: 5px solid #0F172A;
+        font-family: monospace;
+        white-space: pre-wrap;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- VERİTABANI YÖNETİMİ (Karakter Düzeltme Odaklı) ---
-DATA_FILE = "rezervasyonlar.csv"
-COLUMNS = ["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"]
+# --- METİN DOSYASI İŞLEMLERİ (TXT) ---
+LOG_FILE = "kayitlar.txt"
 
-def veritabanini_oku():
-    if not os.path.exists(DATA_FILE):
-        return pd.DataFrame(columns=COLUMNS)
-    try:
-        # Excel dostu utf-8-sig ile oku
-        df = pd.read_csv(DATA_FILE, sep=';', encoding='utf-8-sig')
-        return df
-    except:
-        return pd.DataFrame(columns=COLUMNS)
+def kaydet(mesaj):
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"{datetime.now().strftime('%d.%m.%Y %H:%M')} | {mesaj}\n")
 
-def rezervasyon_ekle(yeni_kayit_dict):
-    df_mevcut = veritabanini_oku()
-    df_yeni = pd.DataFrame([yeni_kayit_dict])
-    df_toplam = pd.concat([df_mevcut, df_yeni], ignore_index=True)
-    # Excel için utf-8-sig ve noktalı virgül hayati önem taşıyor
-    df_toplam.to_csv(DATA_FILE, index=False, sep=';', encoding='utf-8-sig')
+def kayitlari_oku():
+    if not os.path.exists(LOG_FILE):
+        return "Henüz kayıt bulunmuyor."
+    with open(LOG_FILE, "r", encoding="utf-8") as f:
+        return f.read()
 
-# --- GİRİŞ KONTROL ---
-if 'kullanici' not in st.session_state:
-    st.session_state['kullanici'] = None
+# --- OTURUM BAŞLATMA ---
+if 'user' not in st.session_state:
+    st.session_state['user'] = None
 
-if st.session_state['kullanici'] is None:
-    st.markdown("<h1 style='text-align:center; font-weight:900;'>DriveNow</h1>", unsafe_allow_html=True)
+# --- GİRİŞ EKRANI ---
+if st.session_state['user'] is None:
+    st.markdown("<h1 style='text-align:center;'>DriveNow</h1>", unsafe_allow_html=True)
     with st.form("giris"):
         ad = st.text_input("Ad Soyad")
         tc = st.text_input("TC Kimlik No", max_chars=11)
-        tel = st.text_input("Telefon No", max_chars=10)
-        if st.form_submit_button("SİSTEME GİRİŞ YAP"):
+        tel = st.text_input("Telefon", max_chars=10)
+        if st.form_submit_button("GİRİŞ YAP"):
             if ad and len(tc) == 11:
-                st.session_state['kullanici'] = {"ad": ad, "tc": tc, "tel": tel}
+                st.session_state['user'] = {"ad": ad, "tc": tc, "tel": tel}
+                kaydet(f"GİRİŞ: {ad} - TC: {tc} - TEL: {tel}")
                 st.rerun()
 else:
-    tab1, tab2, tab3 = st.tabs(["🚗 ARAÇLAR", "📋 KAYITLARIM", "👤 PROFİL"])
+    t1, t2, t3 = st.tabs(["🚗 Araçlar", "📋 Kayıtlarım", "👤 Profil & Admin"])
 
-    with tab1:
-        st.markdown("<h4 style='font-weight:800;'>Müsait Araçlar</h4>", unsafe_allow_html=True)
-        loc = st.selectbox("Teslimat", ["İstanbul HL", "Sabiha Gökçen HL", "Ankara HL", "İzmir HL"])
-        days = st.number_input("Süre (Gün)", min_value=1, value=1)
+    with t1:
+        st.write(f"Hoş geldin, **{st.session_state['user']['ad']}**")
+        loc = st.selectbox("Alış Yeri", ["İstanbul Havalimanı", "Sabiha Gökçen HL", "Ankara Esenboğa"])
+        days = st.number_input("Gün Sayısı", min_value=1, value=1)
 
         for a in ARACLAR:
             total = a['fiyat'] * days
             st.markdown(f"""
-            <div class="car-card">
-                <div style="font-size:11px; font-weight:900; color:#2563EB;">★ {a['puan']} • {a['kat']}</div>
-                <div class="car-title">{a['ad']}</div>
-                <div style="background:#F8FAFC; padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <div><small>GÜNLÜK</small><br><b>{a['fiyat']} ₺</b></div>
-                    <div style="text-align:right;"><small style="color:#FF6B00;">TOPLAM</small><br><b style="font-size:18px;">{total} ₺</b></div>
+            <div class="card">
+                <b style="font-size:20px;">{a['ad']}</b><br>
+                <small>{a['kat']}</small><br><br>
+                <div style="display:flex; justify-content:space-between;">
+                    <span>Günlük: <b>{a['fiyat']} ₺</b></span>
+                    <span style="color:#FF6B00;">Toplam: <b>{total} ₺</b></span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            
-            if st.button(f"Hemen Kirala: {a['ad']}", key=f"k_{a['ad']}"):
-                yeni = {
-                    "Tarih": datetime.now().strftime("%d.%m.%Y %H:%M"),
-                    "Musteri": st.session_state['kullanici']['ad'],
-                    "TC": str(st.session_state['kullanici']['tc']),
-                    "Telefon": str(st.session_state['kullanici']['tel']),
-                    "Konum": loc,
-                    "Arac": a['ad'],
-                    "Gun": days,
-                    "ToplamTutar": total
-                }
-                rezervasyon_ekle(yeni)
-                st.success("Rezervasyon kaydedildi!")
+            if st.button(f"Hemen Kirala: {a['ad']}", key=a['ad']):
+                bilgi = f"KİRALAMA: {st.session_state['user']['ad']} | Araç: {a['ad']} | Gün: {days} | Tutar: {total} ₺ | Yer: {loc}"
+                kaydet(bilgi)
+                st.success("Rezervasyonunuz kaydedildi!")
 
-    with tab2:
-        df_list = veritabanini_oku()
-        if not df_list.empty:
-            user_recs = df_list[df_list['TC'].astype(str) == str(st.session_state['kullanici']['tc'])]
-            for _, r in user_recs.iterrows():
-                st.markdown(f"""<div class="car-card"><b>{r['Arac']}</b><br><small>{r['Tarih']} | {r['Konum']}</small><br><b>{r['ToplamTutar']} ₺</b></div>""", unsafe_allow_html=True)
-        else:
-            st.info("Kayıt yok.")
+    with t2:
+        st.subheader("İşlemleriniz")
+        tum_kayitlar = kayitlari_oku().split("\n")
+        sayac = 0
+        for k in tum_kayitlar:
+            if st.session_state['user']['ad'] in k:
+                st.markdown(f"<div class='card'>{k}</div>", unsafe_allow_html=True)
+                sayac += 1
+        if sayac == 0:
+            st.info("Size ait bir kiralama kaydı bulunamadı.")
 
-    with tab3:
-        k = st.session_state['kullanici']
-        st.markdown(f"""<div class="vip-card"><div style="font-size:10px; opacity:0.7;">VIP ÜYE</div><div style="font-size:24px; font-weight:900; margin:15px 0;">{k['ad']}</div><div style="font-size:14px;">TC: {k['tc']}</div></div>""", unsafe_allow_html=True)
+    with t3:
+        # KULLANICI BİLGİSİ
+        st.markdown(f"""<div style="background:#1E293B; color:white; padding:20px; border-radius:15px;">
+        <b>Sürücü:</b> {st.session_state['user']['ad']}<br>
+        <b>TC:</b> {st.session_state['user']['tc']}</div>""", unsafe_allow_html=True)
         
         st.write("---")
-        if st.checkbox("⚙️ Yönetici Paneli"):
-            df_full = veritabanini_oku()
-            if not df_full.empty:
-                # Excel Başlıklarını Türkçeleştir
-                df_excel = df_full.rename(columns={
-                    "Tarih": "Kayıt Tarihi",
-                    "Musteri": "Ad Soyad",
-                    "TC": "Kimlik No",
-                    "Telefon": "Tel No",
-                    "Konum": "Alış Noktası",
-                    "Arac": "Araç",
-                    "Gun": "Gün",
-                    "ToplamTutar": "Tutar"
-                })
-                
-                # Karakterleri Düzeltmek İçin Bayt Formatında Hazırla
-                csv_string = df_excel.to_csv(index=False, sep=';', encoding='utf-8-sig')
-                csv_bytes = csv_string.encode('utf-8-sig')
-                
-                st.download_button(
-                    label="📥 EXCEL DOSYASINI İNDİR (Karakter Sorunsuz)",
-                    data=csv_bytes,
-                    file_name=f"Rezervasyonlar_{datetime.now().strftime('%d_%m_%Y')}.csv",
-                    mime="text/csv"
-                )
+        
+        # YÖNETİCİ PANELİ (GİRENLERİ GÖRMEK İÇİN)
+        if st.checkbox("⚙️ Yönetici Paneli (Girenleri Gör)"):
+            st.write("**Tüm Sistem Kayıtları (.txt formatı):**")
+            st.markdown(f"<div class='admin-box'>{kayitlari_oku()}</div>", unsafe_allow_html=True)
             
-            if st.button("🚨 Tüm Verileri Sıfırla"):
-                if os.path.exists(DATA_FILE):
-                    os.remove(DATA_FILE)
-                    st.warning("Veriler silindi.")
+            # TXT olarak indir
+            st.download_button(
+                label="📥 Tüm Kayıtları .txt Olarak İndir",
+                data=kayitlari_oku(),
+                file_name="admin_kayitlar.txt",
+                mime="text/plain"
+            )
+            
+            if st.button("🚨 Kayıtları Sıfırla"):
+                if os.path.exists(LOG_FILE):
+                    os.remove(LOG_FILE)
                     st.rerun()
 
         if st.button("Çıkış Yap"):
-            st.session_state['kullanici'] = None
+            st.session_state['user'] = None
             st.rerun()

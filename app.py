@@ -2,19 +2,18 @@ import streamlit as st
 from datetime import datetime
 import os
 
-# --- SAYFA AYARLARI ---
+# --- AYARLAR ---
 st.set_page_config(page_title="DriveNow Premium", page_icon="🚗", layout="centered")
 
-# --- KLASÖRLER VE DOSYALAR ---
-UPLOAD_DIR = "yuklemeler"
+# --- DOSYA YOLLARI ---
 LOG_FILE = "kayitlar.txt"
+UPLOAD_DIR = "yuklemeler"
 
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 if not os.path.exists(LOG_FILE):
-    with open(LOG_FILE, "a", encoding="utf-8") as f: f.write("")
+    with open(LOG_FILE, "w", encoding="utf-8") as f: f.write("")
 
-# --- ADMİN ŞİFRE ---
-ADMIN_SIFRE = "cihan123" 
+ADMIN_SIFRE = "cihan123"
 
 # --- ARAÇLAR ---
 ARACLAR = [
@@ -25,29 +24,29 @@ ARACLAR = [
     {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "fiyat": 2500}
 ]
 
-# --- KARANLIK MODU VE HAYALET YAZILARI YOK EDEN CSS ---
+# --- KARANLIK MODU EZEN KESİN ÇÖZÜM (CSS) ---
 st.markdown("""
     <style>
-    /* 1. UYGULAMA ZEMİNİ BEMBEYAZ */
+    /* 1. Arka plan her zaman beyaz */
     .stApp { background-color: #FFFFFF !important; }
 
-    /* 2. TÜM YAZILARI ZORLA SİYAHA ÇEK (Karanlık Modda Bile) */
-    html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, strong {
+    /* 2. Tüm yazılar zorunlu siyah (iOS Dark Mode ezici) */
+    html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, strong, textarea {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-family: -apple-system, sans-serif !important;
     }
 
-    /* 3. GİRİŞ KUTULARI VE SELECTBOXLAR */
-    input, div[data-baseweb="select"], .stNumberInput div, div[data-baseweb="base-input"], textarea {
-        background-color: #F1F5F9 !important;
+    /* 3. Giriş kutuları görünürlüğü */
+    input, div[data-baseweb="select"], .stNumberInput div, div[data-baseweb="base-input"] {
+        background-color: #F8FAFC !important;
         color: #000000 !important;
         border: 2px solid #CBD5E1 !important;
         border-radius: 12px !important;
         -webkit-text-fill-color: #000000 !important;
     }
 
-    /* 4. BUTONLAR: TURUNCU ARKA PLAN, BEYAZ YAZI (YAZIYI ZORLA BEYAZ YAP) */
+    /* 4. Turuncu Butonlar ve Beyaz Yazı Koruması */
     div.stButton > button, div.stFormSubmitButton > button {
         background: #FF6B00 !important;
         border: none !important;
@@ -58,13 +57,12 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3) !important;
     }
     
-    /* Buton içindeki metin beyaz kalsın */
     div.stButton > button p, div.stFormSubmitButton > button p {
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
     }
 
-    /* 5. KARTLAR VE TABLAR */
+    /* 5. Kart Tasarımı */
     .custom-card {
         background-color: #FFFFFF !important;
         padding: 20px !important;
@@ -73,137 +71,121 @@ st.markdown("""
         margin-bottom: 15px !important;
     }
 
-    /* Header gizleme */
     header {visibility: hidden !important;}
     </style>
 """, unsafe_allow_html=True)
 
-# --- KAYIT FONKSİYONLARI ---
-def kaydet(mesaj):
-    try:
-        with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(f"{datetime.now().strftime('%d.%m.%Y %H:%M')} | {mesaj}\n")
-    except:
-        st.error("Dosyaya yazılamadı!")
+# --- KAYIT SİSTEMİ FONKSİYONLARI ---
+def kaydet(tip, mesaj):
+    # Tip: 'GİRİŞ' veya 'KİRALAMA'
+    zaman = datetime.now().strftime('%d.%m.%Y %H:%M')
+    with open(LOG_FILE, "a", encoding="utf-8-sig") as f:
+        f.write(f"{zaman} | {tip} | {mesaj}\n")
 
-def kayitlari_oku():
+def kayitlari_ayristir():
+    if not os.path.exists(LOG_FILE): return "", ""
+    girisler = []
+    kiralama = []
+    with open(LOG_FILE, "r", encoding="utf-8-sig") as f:
+        for satir in f:
+            if "| GİRİŞ |" in satir: girisler.append(satir.strip())
+            if "| KİRALAMA |" in satir: kiralama.append(satir.strip())
+    return "\n".join(girisler), "\n".join(kiralama)
+
+def tum_kayitlari_oku():
     if not os.path.exists(LOG_FILE): return []
-    try:
-        with open(LOG_FILE, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-            return [line.strip() for line in lines if line.strip()]
-    except:
-        return []
+    with open(LOG_FILE, "r", encoding="utf-8-sig") as f:
+        return [line.strip() for line in f if line.strip()]
 
-# --- OTURUM MANTIĞI ---
-if 'giris' not in st.session_state: st.session_state['giris'] = False
-if 'kullanici' not in st.session_state: st.session_state['kullanici'] = {}
-if 'secili_arac' not in st.session_state: st.session_state['secili_arac'] = None
+# --- OTURUM BAŞLATMA ---
+if 'auth' not in st.session_state: st.session_state['auth'] = False
+if 'user' not in st.session_state: st.session_state['user'] = {}
+if 'secili' not in st.session_state: st.session_state['secili'] = None
 
 # --- GİRİŞ EKRANI ---
-if not st.session_state['giris']:
+if not st.session_state['auth']:
     st.markdown("<h1 style='text-align:center;'>DriveNow</h1>", unsafe_allow_html=True)
-    with st.form("giris_ekrani"):
+    with st.form("login"):
         ad = st.text_input("Ad Soyad")
         tc = st.text_input("TC Kimlik No", max_chars=11)
         tel = st.text_input("Telefon", max_chars=10)
-        
-        if st.form_submit_button("GİRİŞ YAP"):
+        if st.form_submit_button("DEVAM ET"):
             if ad and len(tc) == 11:
-                st.session_state['giris'] = True
-                st.session_state['kullanici'] = {"ad": ad, "tc": tc, "tel": tel}
-                kaydet(f"GİRİŞ: {ad} (TC:{tc})")
+                st.session_state['auth'] = True
+                st.session_state['user'] = {"ad": ad, "tc": tc, "tel": tel}
+                kaydet("GİRİŞ", f"Ad: {ad} - TC: {tc} - Tel: {tel}")
                 st.rerun()
-            else:
-                st.error("Lütfen bilgileri eksiksiz girin.")
 else:
-    # --- UYGULAMA ARAYÜZÜ ---
-    tab1, tab2, tab3 = st.tabs(["🚗 ARAÇLAR", "📋 KAYITLARIM", "⚙️ YÖNETİCİ"])
+    t1, t2, t3 = st.tabs(["🚗 Araçlar", "📋 Kayıtlarım", "👤 Admin"])
 
-    with tab1:
-        if st.session_state['secili_arac'] is None:
-            st.markdown(f"<h3>Hoş geldin, {st.session_state['kullanici']['ad']}</h3>", unsafe_allow_html=True)
-            konum = st.selectbox("Teslimat Yeri", ["İstanbul Havalimanı", "Sabiha Gökçen HL", "Ankara HL"])
-            gun = st.number_input("Gün Sayısı", min_value=1, value=1)
-            
+    with t1:
+        if st.session_state['secili'] is None:
+            st.markdown(f"<h3>Hoş geldin, {st.session_state['user']['ad']}</h3>", unsafe_allow_html=True)
+            gun = st.number_input("Gün", min_value=1, value=1)
             for a in ARACLAR:
-                toplam = a['fiyat'] * gun
-                st.markdown(f"""<div class='custom-card'><b style='font-size:20px;'>{a['ad']}</b><br>Fiyat: {toplam} ₺</div>""", unsafe_allow_html=True)
+                fiyat = a['fiyat'] * gun
+                st.markdown(f"<div class='custom-card'><b>{a['ad']}</b><br>{fiyat} ₺</div>", unsafe_allow_html=True)
                 if st.button(f"SEÇ: {a['ad']}", key=a['ad']):
-                    st.session_state['secili_arac'] = {"ad": a['ad'], "toplam": toplam, "gun": gun, "konum": konum}
+                    st.session_state['secili'] = {"ad": a['ad'], "fiyat": fiyat}
                     st.rerun()
         else:
-            # EHLİYET YÜKLEME
-            st.warning(f"Seçilen: {st.session_state['secili_arac']['ad']}")
-            with st.form("ehliyet_formu"):
-                ehliyet_no = st.text_input("Ehliyet Belge No")
-                dosya = st.file_uploader("Ehliyet Fotoğrafı (Zorunlu)", type=['jpg','png'])
-                
-                if st.form_submit_button("KİRALAMAYI ONAYLA"):
-                    if ehliyet_no and dosya:
-                        # Kaydet
-                        foto_ad = f"{st.session_state['kullanici']['tc']}_{datetime.now().strftime('%H%M%S')}.jpg"
+            with st.form("kiralama_onay"):
+                st.write(f"Seçilen Araç: {st.session_state['secili']['ad']}")
+                ehliyet = st.text_input("Ehliyet No")
+                dosya = st.file_uploader("Ehliyet Fotoğrafı", type=['jpg','png'])
+                if st.form_submit_button("KİRALAMAYI TAMAMLA"):
+                    if ehliyet and dosya:
+                        foto_ad = f"{st.session_state['user']['tc']}_{datetime.now().strftime('%M%S')}.jpg"
                         with open(os.path.join(UPLOAD_DIR, foto_ad), "wb") as f:
                             f.write(dosya.getbuffer())
                         
-                        s = st.session_state['secili_arac']
-                        kaydet(f"KİRALAMA: {st.session_state['kullanici']['ad']} | Araç: {s['ad']} | Ehliyet: {ehliyet_no} | Tutar: {s['toplam']} ₺")
-                        
-                        st.success("Rezervasyon başarıyla oluşturuldu!")
-                        st.session_state['secili_arac'] = None
+                        kaydet("KİRALAMA", f"Müşteri: {st.session_state['user']['ad']} | Araç: {st.session_state['secili']['ad']} | Ehliyet: {ehliyet} | Tutar: {st.session_state['secili']['fiyat']} ₺")
+                        st.success("Kiralama Başarılı!")
+                        st.session_state['secili'] = None
                         st.rerun()
-                    else:
-                        st.error("Lütfen tüm alanları doldurun.")
-            if st.button("⬅️ Geri Dön"):
-                st.session_state['secili_arac'] = None
+            if st.button("Vazgeç"):
+                st.session_state['secili'] = None
                 st.rerun()
 
-    with tab2:
-        st.subheader("İşlem Geçmişiniz")
-        tum_kayitlar = kayitlari_oku()
-        
-        # Kullanıcının sadece kendi kayıtlarını görmesi için filtre
-        kullanici_adi = st.session_state['kullanici']['ad']
-        sayac = 0
-        
-        if not tum_kayitlar:
-            st.info("Henüz sistemde hiç kayıt yok.")
-        else:
-            for satir in tum_kayitlar:
-                if kullanici_adi in satir:
-                    st.markdown(f"<div class='custom-card'>{satir}</div>", unsafe_allow_html=True)
-                    sayac += 1
-            
-            if sayac == 0:
-                st.info("Adınıza kayıtlı bir işlem bulunamadı.")
+    with t2:
+        st.subheader("İşlemleriniz")
+        logs = tum_kayitlari_oku()
+        u_ad = st.session_state['user']['ad']
+        for log in logs:
+            if u_ad in log:
+                st.markdown(f"<div class='custom-card'>{log}</div>", unsafe_allow_html=True)
 
-    with tab3:
-        # ŞİFRELİ YÖNETİCİ PANELİ
-        admin_onay = st.checkbox("🔑 Yönetici Paneli Girişi")
-        if admin_onay:
+    with t3:
+        # ŞİFRELİ PANEL
+        lock = st.checkbox("🔒 Yönetici Girişi")
+        if lock:
             sifre = st.text_input("Şifre", type="password")
             if sifre == ADMIN_SIFRE:
-                st.success("Yetkili Girişi Başarılı.")
+                st.success("Admin Yetkisi Aktif.")
                 
-                # Rezervasyonları Listele
-                st.markdown("### Tüm Rezervasyon Listesi")
-                st.text_area("Sistem Kayıtları", "\n".join(kayitlari_oku()), height=250)
+                g_logs, k_logs = kayitlari_ayristir()
                 
-                # Ehliyet Fotoğrafları
-                st.markdown("### Yüklenen Ehliyetler")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("<b>Giriş Yapanlar</b>", unsafe_allow_html=True)
+                    st.download_button("📥 Giriş Kayıtlarını İndir", g_logs, "giris_yapanlar.txt")
+                with col2:
+                    st.markdown("<b>Kiralama Yapanlar</b>", unsafe_allow_html=True)
+                    st.download_button("📥 Kiralama Kayıtlarını İndir", k_logs, "kiralama_kayitlari.txt")
+                
+                st.write("---")
+                st.markdown("<b>Yüklenen Ehliyet Resimleri:</b>", unsafe_allow_html=True)
                 fotolar = os.listdir(UPLOAD_DIR)
                 for f in fotolar:
                     with open(os.path.join(UPLOAD_DIR, f), "rb") as file:
+                        st.image(os.path.join(UPLOAD_DIR, f), width=100)
                         st.download_button(f"İndir: {f}", file, file_name=f)
-                        st.image(os.path.join(UPLOAD_DIR, f), width=150)
                 
-                if st.button("🚨 Verileri Sıfırla"):
+                if st.button("🚨 Tüm Verileri Temizle"):
                     if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
                     for f in os.listdir(UPLOAD_DIR): os.remove(os.path.join(UPLOAD_DIR, f))
                     st.rerun()
-            elif sifre != "":
-                st.error("Hatalı Şifre!")
 
-        if st.button("GÜVENLİ ÇIKIŞ"):
-            st.session_state['giris'] = False
+        if st.button("ÇIKIŞ"):
+            st.session_state['auth'] = False
             st.rerun()

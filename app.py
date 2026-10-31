@@ -160,6 +160,32 @@ st.markdown(
         margin-top: 6px !important;
     }
 
+    /* İNDİRME BUTONLARI DÜZELTMESİ (GÖRSELDEKİ SİYAH BUTON SORUNU İÇİN) */
+    [data-testid="stDownloadButton"] > button {
+        background: #FFFFFF !important;
+        color: #2563EB !important;
+        -webkit-text-fill-color: #2563EB !important;
+        border: 2px solid #2563EB !important;
+        border-radius: 14px !important;
+        font-weight: 800 !important;
+        height: 48px !important;
+        width: 100% !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1) !important;
+    }
+    [data-testid="stDownloadButton"] > button:hover {
+        background: #2563EB !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+    [data-testid="stDownloadButton"] > button * {
+        color: #2563EB !important;
+        -webkit-text-fill-color: #2563EB !important;
+    }
+    [data-testid="stDownloadButton"] > button:hover * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+
     /* DOSYA YÜKLEYİCİ */
     [data-testid="stFileUploader"] section {
         background-color: #FFFFFF !important;
@@ -505,7 +531,7 @@ else:
     with t3:
         u = st.session_state["user"]
 
-        # YENİLENMİŞ VIP SÜRÜCÜ KARTI (Tüm metinler yüksek görünürlükte beyaz)
+        # VIP SÜRÜCÜ KARTI
         driver_card_html = f"""
         <div class="vip-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">

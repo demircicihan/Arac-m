@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-import textwrap
 
 # Sayfa Ayarları
 st.set_page_config(
@@ -65,7 +64,6 @@ st.markdown("""
         margin-bottom: 20px !important;
     }
 
-    /* MODERN ARAÇ KARTI TASARIMI */
     .car-card-modern {
         background-color: #FFFFFF !important;
         padding: 18px !important;
@@ -75,22 +73,20 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* YAN YANA İKİİLİ DÜZEN (SPLIT CONTAINER) */
     .card-split-container {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
-        gap: 12px !important;
+        gap: 10px !important;
         margin-bottom: 10px !important;
     }
 
     .card-left-content {
-        flex: 1 1 58% !important;
+        flex: 1 1 56% !important;
     }
 
-    /* İŞARETLENEN YEŞİL KUTUCUK ALANI (SAĞ RESİM KUTUSU) */
     .card-right-image-box {
-        flex: 1 1 42% !important;
+        flex: 1 1 44% !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
@@ -98,7 +94,7 @@ st.markdown("""
 
     .car-photo-right {
         width: 100% !important;
-        height: 110px !important;
+        height: 105px !important;
         object-fit: cover !important;
         border-radius: 14px !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
@@ -122,17 +118,17 @@ st.markdown("""
     }
 
     .car-title-text {
-        font-size: 20px !important;
+        font-size: 19px !important;
         font-weight: 900 !important;
         color: #0F172A !important;
-        margin: 4px 0 8px 0 !important;
+        margin: 2px 0 6px 0 !important;
     }
 
     .pill-box {
         display: flex !important;
         gap: 4px !important;
         flex-wrap: wrap !important;
-        margin-bottom: 8px !important;
+        margin-bottom: 6px !important;
     }
 
     .tag-item {
@@ -140,7 +136,7 @@ st.markdown("""
         color: #334155 !important;
         font-size: 11px !important;
         font-weight: 700 !important;
-        padding: 4px 8px !important;
+        padding: 3px 6px !important;
         border-radius: 6px !important;
     }
 
@@ -149,7 +145,7 @@ st.markdown("""
         background: #ECFDF5 !important;
         font-weight: 700 !important;
         font-size: 11px !important;
-        padding: 4px 8px !important;
+        padding: 3px 6px !important;
         border-radius: 6px !important;
         display: inline-block !important;
     }
@@ -205,7 +201,6 @@ st.markdown("""
 
 DATA_FILE = "rezervasyonlar.csv"
 
-# Veritabanı ve Konum Kontrolü
 if not os.path.exists(DATA_FILE):
     df = pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"])
     df.to_csv(DATA_FILE, index=False)
@@ -215,7 +210,6 @@ else:
         df['Konum'] = "İstanbul • Sabiha Gökçen HL"
         df.to_csv(DATA_FILE, index=False)
 
-# KESİNTİSİZ YÜKLENEN YÜKSEK KALİTELİ MODEL FOTOĞRAFLARI
 ARACLAR = [
     {
         "ad": "Peugeot 508 GT", 
@@ -279,13 +273,7 @@ if 'kullanici' not in st.session_state:
 
 # ==================== 1. GİRİŞ EKRANI ====================
 if st.session_state['kullanici'] is None:
-    st.markdown("""
-        <div class="hero-header" style="text-align: center;">
-            <div class="status-badge">📍 Türkiye Geneli 7/24 Hizmet</div>
-            <h1 style="font-size: 32px; font-weight: 900; margin: 4px 0;">DriveNow</h1>
-            <p style="font-size: 14px; opacity: 0.8;">Lüks & Ekonomik Araç Kiralama</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("""<div class="hero-header" style="text-align: center;"><div class="status-badge">📍 Türkiye Geneli 7/24 Hizmet</div><h1 style="font-size: 32px; font-weight: 900; margin: 4px 0;">DriveNow</h1><p style="font-size: 14px; opacity: 0.8;">Lüks & Ekonomik Araç Kiralama</p></div>""", unsafe_allow_html=True)
 
     with st.form("giris_formu"):
         ad = st.text_input("Ad Soyad", placeholder="Örn: Cihan Demir")
@@ -339,48 +327,10 @@ else:
 
             toplam_fiyat = arac["fiyat"] * gun
             
-            # SAĞA RESİM YERLEŞTİRİLMİŞ KART TASARIMI
-            card_html = f"""
-            <div class="car-card-modern">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span class="car-cat">{arac['kat']}</span>
-                    <span class="rating-pill">★ {arac['puan']}</span>
-                </div>
-                
-                <div class="card-split-container">
-                    <!-- SOL TARAF: METİNLER VE ETİKETLER -->
-                    <div class="card-left-content">
-                        <div class="car-title-text">{arac['ad']}</div>
-                        <div class="pill-box">
-                            <span class="tag-item">🔀 {arac['vites']}</span>
-                            <span class="tag-item">⛽ {arac['yakit']}</span>
-                            <span class="tag-item">👥 {arac['koltuk']}</span>
-                            <span class="tag-item">🧳 {arac['bagaj']}</span>
-                        </div>
-                        <div>
-                            <span class="guarantee-tag">✓ Ücretsiz İptal</span>
-                        </div>
-                    </div>
-                    
-                    <!-- SAĞ TARAF: YEŞİL KUTUNUN OLDUĞU ARAÇ RESMİ ALANI -->
-                    <div class="card-right-image-box">
-                        <img src="{arac['resim']}" class="car-photo-right" alt="{arac['ad']}"/>
-                    </div>
-                </div>
-
-                <div class="price-row">
-                    <div>
-                        <div style="font-size: 10px; color: #64748B; font-weight: 700;">GÜNLÜK</div>
-                        <div style="font-size: 17px; font-weight: 800; color: #2563EB;">{arac['fiyat']:,} ₺</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 10px; color: #64748B; font-weight: 700;">{gun} GÜNLÜK TOPLAM</div>
-                        <div style="font-size: 17px; font-weight: 900; color: #0F172A;">{toplam_fiyat:,} ₺</div>
-                    </div>
-                </div>
-            </div>
-            """
-            st.markdown(textwrap.dedent(card_html), unsafe_allow_html=True)
+            # TEK SATIR HATA VERMEYEN HTML MİMARİSİ
+            card_html = f"""<div class="car-card-modern"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><span class="car-cat">{arac['kat']}</span><span class="rating-pill">★ {arac['puan']}</span></div><div class="card-split-container"><div class="card-left-content"><div class="car-title-text">{arac['ad']}</div><div class="pill-box"><span class="tag-item">🔀 {arac['vites']}</span><span class="tag-item">⛽ {arac['yakit']}</span><span class="tag-item">👥 {arac['koltuk']}</span><span class="tag-item">🧳 {arac['bagaj']}</span></div><div><span class="guarantee-tag">✓ Ücretsiz İptal</span></div></div><div class="card-right-image-box"><img src="{arac['resim']}" class="car-photo-right" alt="{arac['ad']}"/></div></div><div class="price-row"><div><div style="font-size: 10px; color: #64748B; font-weight: 700;">GÜNLÜK</div><div style="font-size: 17px; font-weight: 800; color: #2563EB;">{arac['fiyat']:,} ₺</div></div><div style="text-align: right;"><div style="font-size: 10px; color: #64748B; font-weight: 700;">{gun} GÜNLÜK TOPLAM</div><div style="font-size: 17px; font-weight: 900; color: #0F172A;">{toplam_fiyat:,} ₺</div></div></div></div>"""
+            
+            st.markdown(card_html, unsafe_allow_html=True)
             
             if st.button(f"Hemen Kirala - {arac['ad']}", key=arac['ad']):
                 yeni_kayit = pd.DataFrame([{
@@ -407,43 +357,13 @@ else:
                 for idx, row in user_df.iterrows():
                     konum_yazisi = row['Konum'] if 'Konum' in df.columns else "İstanbul • Sabiha Gökçen HL"
                     
-                    rec_html = f"""
-                    <div class="car-card-modern" style="border-left: 6px solid #2563EB !important;">
-                        <div style="font-size: 11px; color: #2563EB; font-weight: 800;">REZERVASYON ONAYLANDI</div>
-                        <div style="font-size: 18px; font-weight: 900; color: #0F172A; margin: 4px 0;">🚗 {row['Arac']}</div>
-                        <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">📍 {konum_yazisi} &nbsp;|&nbsp; 📅 {row['Tarih']}</div>
-                        <div style="font-size: 14px; font-weight: 800; color: #0F172A;">
-                            ⏱ {row['Gun']} Günlük | 💰 Toplam: {row['ToplamTutar']:,} ₺
-                        </div>
-                    </div>
-                    """
-                    st.markdown(textwrap.dedent(rec_html), unsafe_allow_html=True)
+                    rec_html = f"""<div class="car-card-modern" style="border-left: 6px solid #2563EB !important;"><div style="font-size: 11px; color: #2563EB; font-weight: 800;">REZERVASYON ONAYLANDI</div><div style="font-size: 18px; font-weight: 900; color: #0F172A; margin: 4px 0;">🚗 {row['Arac']}</div><div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">📍 {konum_yazisi} &nbsp;|&nbsp; 📅 {row['Tarih']}</div><div style="font-size: 14px; font-weight: 800; color: #0F172A;">⏱ {row['Gun']} Günlük | 💰 Toplam: {row['ToplamTutar']:,} ₺</div></div>"""
+                    st.markdown(rec_html, unsafe_allow_html=True)
             else:
                 st.info("Aktif veya geçmiş bir kiralamanız bulunmuyor.")
 
     # ---------- TAB 3: DİJİTAL SÜRÜCÜ KARTI ----------
     with tab3:
         k = st.session_state['kullanici']
-        card_driver = f"""
-        <div class="hero-header">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <span style="font-size: 16px; font-weight: 900; letter-spacing: 1px; color:#FFF;">DriveNow VIP</span>
-                <span style="font-size: 22px;">💳</span>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 11px; opacity: 0.7; color:#FFF;">SÜRÜCÜ AD SOYAD</div>
-                <div style="font-size: 20px; font-weight: 900; color:#FFF;">{k['ad']}</div>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-                <div>
-                    <div style="font-size: 11px; opacity: 0.7; color:#FFF;">T.C. KİMLİK NO</div>
-                    <div style="font-size: 14px; font-weight: 700; color:#FFF;">{k['tc']}</div>
-                </div>
-                <div>
-                    <div style="font-size: 11px; opacity: 0.7; color:#FFF;">TELEFON</div>
-                    <div style="font-size: 14px; font-weight: 700; color:#FFF;">+90 {k['tel']}</div>
-                </div>
-            </div>
-        </div>
-        """
-        st.markdown(textwrap.dedent(card_driver), unsafe_allow_html=True)
+        card_driver = f"""<div class="hero-header"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"><span style="font-size: 16px; font-weight: 900; letter-spacing: 1px; color:#FFF;">DriveNow VIP</span><span style="font-size: 22px;">💳</span></div><div style="margin-bottom: 12px;"><div style="font-size: 11px; opacity: 0.7; color:#FFF;">SÜRÜCÜ AD SOYAD</div><div style="font-size: 20px; font-weight: 900; color:#FFF;">{k['ad']}</div></div><div style="display: flex; justify-content: space-between;"><div><div style="font-size: 11px; opacity: 0.7; color:#FFF;">T.C. KİMLİK NO</div><div style="font-size: 14px; font-weight: 700; color:#FFF;">{k['tc']}</div></div><div><div style="font-size: 11px; opacity: 0.7; color:#FFF;">TELEFON</div><div style="font-size: 14px; font-weight: 700; color:#FFF;">+90 {k['tel']}</div></div></div></div>"""
+        st.markdown(card_driver, unsafe_allow_html=True)

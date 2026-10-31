@@ -55,7 +55,7 @@ ARACLAR = [
         "sanziman": "Tek Vitesli Otomatik",
         "tuketim": "14.4 kWh / 100km",
         "hizlanma": "0-100 km/s: 6.1 sn",
-        "donanimlar": ["Autopilot", "Cam Tavan", "15\" Dokunmatik Ekran", "Koltuk Isıtma"],
+        "donanimlar": ["Autopilot", "Cam Tavan", "15 Dokunmatik Ekran", "Koltuk Isıtma"],
     },
     {
         "ad": "Ford Focus",
@@ -103,7 +103,7 @@ ARACLAR = [
         "sanziman": "5 İleri Manuel",
         "tuketim": "4.4 Lt / 100km",
         "hizlanma": "0-100 km/s: 12.8 sn",
-        "donanimlar": ["Yüksek Sürüş Pozisyonu", "City Modu", "10\" Tablet Ekran", "Tavan Çıtaları"],
+        "donanimlar": ["Yüksek Sürüş Pozisyonu", "City Modu", "10 Tablet Ekran", "Tavan Çıtaları"],
     },
 ]
 
@@ -210,7 +210,6 @@ st.markdown(
         padding: 6px 14px !important;
         border-radius: 12px !important;
         display: inline-block !important;
-        margin-top: 10px !important;
         border: 1px solid rgba(52, 211, 153, 0.25) !important;
     }
 
@@ -511,11 +510,11 @@ else:
                         <div class="tech-item">🚀 <b>Hızlanma:</b> {a['hizlanma']}</div>
                     </div>
 
-                    <div style="margin-top:6px;">
+                    <div style="margin-top:8px;">
                         {chips_html}
                     </div>
 
-                    <div style="margin-top:8px;">
+                    <div style="margin-top:10px;">
                         <span class="guarantee-badge">🟢 Anında Teslim • Sınırsız KM • Full Kasko</span>
                     </div>
 

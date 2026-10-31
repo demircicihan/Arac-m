@@ -22,7 +22,7 @@ if not os.path.exists(LOG_FILE):
 
 ADMIN_SIFRE = "cihan123"
 
-# --- ZENGİN ARAÇ FİLOSU ---
+# --- ZENGİN ARAÇ FİLOSU (FOTOĞRAFLAR KALDIRILDI) ---
 ARACLAR = [
     {
         "ad": "Peugeot 508 GT",
@@ -32,8 +32,7 @@ ARACLAR = [
         "fiyat": 1500,
         "puan": "4.9",
         "koltuk": "5 Koltuk",
-        "bagaj": "2 Valiz",
-        "resim": "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop&q=80"
+        "bagaj": "2 Valiz"
     },
     {
         "ad": "Renault Clio",
@@ -43,8 +42,7 @@ ARACLAR = [
         "fiyat": 900,
         "puan": "4.7",
         "koltuk": "5 Koltuk",
-        "bagaj": "1 Valiz",
-        "resim": "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80"
+        "bagaj": "1 Valiz"
     },
     {
         "ad": "Ford Focus",
@@ -54,8 +52,7 @@ ARACLAR = [
         "fiyat": 1200,
         "puan": "4.8",
         "koltuk": "5 Koltuk",
-        "bagaj": "2 Valiz",
-        "resim": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80"
+        "bagaj": "2 Valiz"
     },
     {
         "ad": "Fiat Egea Cross",
@@ -65,8 +62,7 @@ ARACLAR = [
         "fiyat": 850,
         "puan": "4.6",
         "koltuk": "5 Koltuk",
-        "bagaj": "2 Valiz",
-        "resim": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80"
+        "bagaj": "2 Valiz"
     },
     {
         "ad": "Tesla Model 3",
@@ -76,12 +72,11 @@ ARACLAR = [
         "fiyat": 2500,
         "puan": "5.0",
         "koltuk": "5 Koltuk",
-        "bagaj": "3 Valiz",
-        "resim": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&auto=format&fit=crop&q=80"
+        "bagaj": "3 Valiz"
     }
 ]
 
-# --- KRİTİK GÖRÜNÜRLÜK VE STİL AYARLARI (CSS) ---
+# --- TASARIM VE GÖRÜNÜRLÜK (CSS) ---
 st.markdown("""
     <style>
     .stApp {
@@ -112,20 +107,11 @@ st.markdown("""
     /* DETAYLI ARAÇ KARTI */
     .car-card-detailed {
         background: #FFFFFF !important;
-        padding: 20px !important;
+        padding: 22px !important;
         border-radius: 24px !important;
         border: 1.5px solid #E2E8F0 !important;
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06) !important;
         margin-bottom: 20px !important;
-    }
-
-    .car-photo {
-        width: 100% !important;
-        height: 180px !important;
-        object-fit: cover !important;
-        border-radius: 16px !important;
-        margin: 12px 0 !important;
-        border: 1px solid #E2E8F0 !important;
     }
 
     /* PASTEL ÖZELLİK ETİKETLERİ */
@@ -243,15 +229,7 @@ if 'secili' not in st.session_state: st.session_state['secili'] = None
 
 # --- GİRİŞ EKRANI ---
 if not st.session_state['auth']:
-    st.markdown("""
-        <div style="text-align: center; padding: 20px 0 10px 0;">
-            <div style="background: #1E293B; color: #FFF !important; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; display: inline-block; margin-bottom: 10px;">
-                📍 Türkiye Geneli 7/24 Teslimat
-            </div>
-            <h1 style="font-size: 38px; font-weight: 900; margin: 0; color: #0F172A;">DriveNow</h1>
-            <p style="font-size: 15px; font-weight: 600; color: #475569;">Premium Araç Kiralama Deneyimi</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("""<div style="text-align: center; padding: 20px 0 10px 0;"><div style="background: #1E293B; color: #FFF !important; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; display: inline-block; margin-bottom: 10px;">📍 Türkiye Geneli 7/24 Teslimat</div><h1 style="font-size: 38px; font-weight: 900; margin: 0; color: #0F172A;">DriveNow</h1><p style="font-size: 15px; font-weight: 600; color: #475569;">Premium Araç Kiralama Deneyimi</p></div>""", unsafe_allow_html=True)
 
     with st.form("login_form"):
         st.markdown("<p style='font-size: 16px; font-weight: 800; margin-bottom: 8px;'>👋 Lütfen Bilgilerinizi Girin</p>", unsafe_allow_html=True)
@@ -294,7 +272,7 @@ else:
                 gun = st.number_input("⏱ Gün", min_value=1, max_value=30, value=1)
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # 🚗 ARAÇ LİSTESİ
+            # 🚗 ARAÇ LİSTESİ (SADE, FOTOĞRAFSIZ)
             müsait_sayisi = 0
             for a in ARACLAR:
                 if vites_filtre != "Tümü" and a["vites"] != vites_filtre:
@@ -303,7 +281,7 @@ else:
                 müsait_sayisi += 1
                 toplam_tutar = a["fiyat"] * gun
 
-                card_html = f"""<div class="car-card-detailed"><div><span style="font-size:11px; font-weight:900; color:#2563EB; letter-spacing:0.5px;">{a['kat']}</span><span style="background:#FEF3C7; color:#B45309; font-size:12px; font-weight:900; padding:3px 8px; border-radius:8px; float:right;">★ {a['puan']}</span></div><div style="font-size:24px; font-weight:900; color:#0F172A; margin:4px 0;">{a['ad']}</div><img src="{a['resim']}" class="car-photo" alt="{a['ad']}"><div style="margin-bottom:12px;"><span class="tag-vites">🔀 {a['vites']}</span><span class="tag-yakit">⛽ {a['yakit']}</span><span class="tag-koltuk">👥 {a['koltuk']}</span><span class="tag-bagaj">🧳 {a['bagaj']}</span></div><div><span class="guarantee-badge">✓ Sınırsız KM • Full Kasko • Ücretsiz İptal</span></div><div class="price-row-box"><div><div style="font-size:10px; font-weight:800; color:#64748B;">GÜNLÜK FİYAT</div><div style="font-size:18px; font-weight:900; color:#2563EB;">{a['fiyat']:,} ₺</div></div><div style="text-align:right;"><div style="font-size:10px; font-weight:800; color:#64748B;">{gun} GÜNLÜK TOPLAM</div><div style="font-size:22px; font-weight:900; color:#0F172A;">{toplam_tutar:,} ₺</div></div></div></div>"""
+                card_html = f"""<div class="car-card-detailed"><div><span style="font-size:11px; font-weight:900; color:#2563EB; letter-spacing:0.5px;">{a['kat']}</span><span style="background:#FEF3C7; color:#B45309; font-size:12px; font-weight:900; padding:3px 8px; border-radius:8px; float:right;">★ {a['puan']}</span></div><div style="font-size:24px; font-weight:900; color:#0F172A; margin:4px 0 10px 0;">{a['ad']}</div><div style="margin-bottom:12px;"><span class="tag-vites">🔀 {a['vites']}</span><span class="tag-yakit">⛽ {a['yakit']}</span><span class="tag-koltuk">👥 {a['koltuk']}</span><span class="tag-bagaj">🧳 {a['bagaj']}</span></div><div><span class="guarantee-badge">✓ Sınırsız KM • Full Kasko • Ücretsiz İptal</span></div><div class="price-row-box"><div><div style="font-size:10px; font-weight:800; color:#64748B;">GÜNLÜK FİYAT</div><div style="font-size:18px; font-weight:900; color:#2563EB;">{a['fiyat']:,} ₺</div></div><div style="text-align:right;"><div style="font-size:10px; font-weight:800; color:#64748B;">{gun} GÜNLÜK TOPLAM</div><div style="font-size:22px; font-weight:900; color:#0F172A;">{toplam_tutar:,} ₺</div></div></div></div>"""
                 st.markdown(card_html, unsafe_allow_html=True)
 
                 if st.button(f"Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"):
@@ -379,12 +357,7 @@ else:
                 for satir in f:
                     if u_tc in satir or u_ad in satir:
                         bulundu = True
-                        st.markdown(f"""
-                        <div class="car-card-detailed" style="border-left: 6px solid #059669 !important; padding: 14px !important;">
-                            <div style="font-size: 12px; color: #059669; font-weight: 900;">✓ KAYIT ONAYLANDI</div>
-                            <div style="font-size: 14px; font-weight: 700; margin-top: 4px;">{satir.strip()}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(f"""<div class="car-card-detailed" style="border-left: 6px solid #059669 !important; padding: 14px !important;"><div style="font-size: 12px; color: #059669; font-weight: 900;">✓ KAYIT ONAYLANDI</div><div style="font-size: 14px; font-weight: 700; margin-top: 4px;">{satir.strip()}</div></div>""", unsafe_allow_html=True)
         
         if not bulundu:
             st.info("Henüz sistemde kiralama kaydınız bulunmuyor.")

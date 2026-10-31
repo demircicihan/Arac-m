@@ -20,202 +20,195 @@ ARACLAR = [
     {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500, "puan": "5.0", "koltuk": "5 Koltuk", "bagaj": "3 Valiz"}
 ]
 
-# --- TASARIM (YÜKSEK KONTRASTLI CSS) ---
+# --- KRİTİK GÖRÜNÜRLÜK AYARLARI (CSS) ---
 st.markdown("""
     <style>
-    /* Arka plan */
-    .stApp { background: linear-gradient(160deg, #E2E8F0 0%, #F8FAFC 100%) !important; }
-    
-    /* GİZLENECEK ALANLAR */
-    header {visibility: hidden !important;}
-    footer {visibility: hidden !important;}
-
-    /* TÜM METİNLERİ NETLEŞTİR (KOYU LACİVERT) */
-    html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div {
-        color: #0F172A !important;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important;
+    /* Arka Plan */
+    .stApp {
+        background: #F1F5F9 !important;
     }
 
-    /* Input ve Selectbox yazılarını netleştir */
-    input, select, textarea {
+    header, footer {visibility: hidden !important;}
+
+    /* TÜM YAZILAR: Koyu Lacivert ve Net */
+    html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span {
         color: #0F172A !important;
+        font-family: -apple-system, sans-serif !important;
+    }
+
+    /* GİRİŞ KUTULARI (Selectbox, Input, Number) - KARANLIK MODU EZER */
+    input, div[data-baseweb="select"], div[data-baseweb="base-input"], .stNumberInput div {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-radius: 12px !important;
+        border: 2px solid #CBD5E1 !important;
+    }
+    
+    /* Input içerisindeki metinler */
+    input {
+        color: #0F172A !important;
+        -webkit-text-fill-color: #0F172A !important;
         font-weight: 700 !important;
     }
 
-    /* Tab Menüsü Tasarımı */
+    /* Dropdown (Açılır Menü) Seçenekleri */
+    div[role="listbox"] ul {
+        background-color: white !important;
+        color: #0F172A !important;
+    }
+
+    /* TURUNCU BUTONLAR VE BEYAZ YAZI */
+    div.stButton > button, div.stFormSubmitButton > button {
+        background: #FF6B00 !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 14px !important;
+        font-weight: 800 !important;
+        font-size: 16px !important;
+        height: 50px !important;
+        width: 100% !important;
+        box-shadow: 0 4px 12px rgba(255, 107, 0, 0.2) !important;
+    }
+    
+    /* Mavi giriş butonu özel */
+    div.stFormSubmitButton > button {
+        background: #2563EB !important;
+    }
+
+    /* Tab Menüsü */
     div[data-baseweb="tab-list"] {
-        background-color: #CBD5E1 !important;
+        background-color: #E2E8F0 !important;
         border-radius: 15px !important;
-        padding: 5px !important;
-        margin-bottom: 20px;
+        padding: 4px !important;
     }
     div[aria-selected="true"] {
         background: #FFFFFF !important;
         border-radius: 12px !important;
     }
-    div[aria-selected="true"] p {
-        color: #2563EB !important;
-        font-weight: 900 !important;
-    }
 
     /* Araç Kartları */
-    .car-card-modern {
+    .car-card {
         background: #FFFFFF !important;
-        padding: 24px !important;
-        border-radius: 24px !important;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
-        border: 2px solid #CBD5E1 !important;
-        margin-bottom: 20px !important;
+        padding: 20px !important;
+        border-radius: 20px !important;
+        border: 1px solid #CBD5E1 !important;
+        margin-bottom: 15px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
     }
 
-    /* Renkli Tagler (Yazıları kalın ve koyu) */
-    .tag-vites { background: #DBEAFE !important; color: #1E40AF !important; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 13px; margin-right: 6px; border: 1px solid #BFDBFE; }
-    .tag-yakit { background: #FEF3C7 !important; color: #92400E !important; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 13px; margin-right: 6px; border: 1px solid #FDE68A; }
-    .tag-koltuk { background: #F3E8FF !important; color: #6B21A8 !important; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 13px; border: 1px solid #E9D5FF; }
-
-    /* Fiyat Alanı */
-    .price-row {
-        background: #F1F5F9 !important;
-        padding: 16px !important;
-        border-radius: 18px !important;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 15px;
-        border: 1px solid #E2E8F0;
-    }
-
-    /* Buton Tasarımı */
-    div.stButton > button {
-        background: #FF6B00 !important;
-        color: #FFFFFF !important;
-        border-radius: 16px !important;
-        border: none !important;
-        font-weight: 900 !important;
-        font-size: 16px !important;
-        height: 54px !important;
-        width: 100% !important;
-        box-shadow: 0 6px 15px rgba(255, 107, 0, 0.3) !important;
-        margin-top: 5px;
+    .tag {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-right: 5px;
+        border: 1px solid rgba(0,0,0,0.1);
     }
     
-    /* Input kutuları */
-    .stTextInput>div>div>input {
-        background-color: white !important;
-        border: 2px solid #CBD5E1 !important;
-        border-radius: 12px !important;
-        height: 45px !important;
+    /* PROFIL KARTI (VIP) - Yazıların Beyaz Kalması İçin Zorla */
+    .vip-card {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%) !important;
+        padding: 25px !important;
+        border-radius: 20px !important;
+        color: #FFFFFF !important;
+    }
+    .vip-card * {
+        color: #FFFFFF !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- VERİ TABANI ---
+# --- VERİ VE LOGIC ---
 DATA_FILE = "rezervasyonlar.csv"
 if not os.path.exists(DATA_FILE):
     pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"]).to_csv(DATA_FILE, index=False)
 
-# --- OTURUM YÖNETİMİ ---
 if 'kullanici' not in st.session_state:
     st.session_state['kullanici'] = None
 
+# --- GİRİŞ EKRANI ---
 if st.session_state['kullanici'] is None:
-    st.markdown('<div style="text-align: center; padding: 30px 10px;"><h1 style="font-weight: 900; font-size: 46px; color: #0F172A !important;">DriveNow</h1><p style="font-weight: 800; color: #475569 !important;">Premium Araç Kiralama</p></div>', unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center; margin-bottom:0;'>DriveNow</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; opacity:0.7; margin-bottom:30px;'>Premium Rent a Car</p>", unsafe_allow_html=True)
     
-    with st.container():
-        st.markdown("<div style='background: white; padding: 25px; border-radius: 20px; border: 2px solid #CBD5E1;'>", unsafe_allow_html=True)
-        with st.form("giris"):
-            ad = st.text_input("Ad Soyad")
-            tc = st.text_input("TC Kimlik No (11 Hane)", max_chars=11)
-            tel = st.text_input("Telefon (5xx)", max_chars=10)
-            if st.form_submit_button("SİSTEME GİRİŞ YAP"):
-                if ad and len(tc) == 11:
-                    st.session_state['kullanici'] = {"ad": ad, "tc": tc, "tel": tel}
-                    st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+    with st.form("login"):
+        ad = st.text_input("Ad Soyad", placeholder="Adınızı giriniz")
+        tc = st.text_input("TC Kimlik No", max_chars=11, placeholder="11 hane")
+        tel = st.text_input("Telefon", max_chars=10, placeholder="5XXXXXXXXX")
+        if st.form_submit_button("DEVAM ET ➔"):
+            if ad and len(tc) == 11:
+                st.session_state['kullanici'] = {"ad": ad, "tc": tc, "tel": tel}
+                st.rerun()
 else:
-    # Sekmeler
-    tab1, tab2, tab3 = st.tabs(["🚗 ARAÇLAR", "📋 KİRALAMALARIM", "👤 PROFİL"])
+    # --- ANA UYGULAMA ---
+    t1, t2, t3 = st.tabs(["🚗 Araçlar", "📋 Kiralamalarım", "👤 Profil"])
 
-    with tab1:
-        st.markdown("<h3 style='font-weight: 900; margin-bottom: 20px;'>Müsait Araçlar</h3>", unsafe_allow_html=True)
-        
-        # Filtre Alanı
-        col1, col2 = st.columns(2)
-        with col1:
-            konum = st.selectbox("Alış Noktası", ["İstanbul Havalimanı", "Sabiha Gökçen HL", "Ankara Esenboğa HL", "İzmir Adnan Menderes HL"])
-        with col2:
-            gun = st.number_input("Gün Sayısı", min_value=1, value=1)
+    with t1:
+        st.markdown("<h4 style='font-weight:800;'>Kiralık Araçlar</h4>", unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        with c1:
+            loc = st.selectbox("Lokasyon", ["İstanbul HL", "Sabiha Gökçen HL", "Ankara HL", "İzmir HL"])
+        with c2:
+            days = st.number_input("Gün", min_value=1, value=1)
 
-        for arac in ARACLAR:
-            total = arac['fiyat'] * gun
-            card_html = f"""
-            <div class="car-card-modern">
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="font-size: 12px; font-weight: 900; color: #2563EB;">{arac['kat']}</span>
-                    <span style="background: #FEF3C7; color: #92400E; padding: 2px 8px; border-radius: 6px; font-weight: 900;">★ {arac['puan']}</span>
+        for a in ARACLAR:
+            total = a['fiyat'] * days
+            st.markdown(f"""
+            <div class="car-card">
+                <div style="font-size:11px; color:#2563EB; font-weight:800;">{a['kat']}</div>
+                <div style="font-size:22px; font-weight:900; margin-bottom:10px;">{a['ad']}</div>
+                <div style="margin-bottom:15px;">
+                    <span class="tag" style="background:#DBEAFE; color:#1E40AF;">{a['vites']}</span>
+                    <span class="tag" style="background:#FEF3C7; color:#92400E;">{a['yakit']}</span>
                 </div>
-                <div style="font-size: 26px; font-weight: 900; margin: 8px 0;">{arac['ad']}</div>
-                <div style="margin: 15px 0;">
-                    <span class="tag-vites">{arac['vites']}</span>
-                    <span class="tag-yakit">{arac['yakit']}</span>
-                    <span class="tag-koltuk">{arac['koltuk']}</span>
-                </div>
-                <div class="price-row">
-                    <div>
-                        <div style="font-size: 11px; font-weight: 800; color: #64748B;">GÜNLÜK</div>
-                        <div style="font-size: 20px; font-weight: 900;">{arac['fiyat']} ₺</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 11px; font-weight: 800; color: #64748B;">TOPLAM</div>
-                        <div style="font-size: 22px; font-weight: 900; color: #FF6B00;">{total} ₺</div>
-                    </div>
+                <div style="background:#F8FAFC; padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><small>GÜNLÜK</small><br><b>{a['fiyat']} ₺</b></div>
+                    <div style="text-align:right; color:#FF6B00;"><small>TOPLAM</small><br><b style="font-size:18px;">{total} ₺</b></div>
                 </div>
             </div>
-            """
-            st.markdown(card_html, unsafe_allow_html=True)
-            if st.button(f"HEMEN KİRALA: {arac['ad']}", key=arac['ad']):
-                yeni = pd.DataFrame([[datetime.now().strftime("%d.%m.%Y"), st.session_state['kullanici']['ad'], st.session_state['kullanici']['tc'], st.session_state['kullanici']['tel'], konum, arac['ad'], gun, total]], 
+            """, unsafe_allow_html=True)
+            if st.button(f"Hemen Kirala: {a['ad']}", key=a['ad']):
+                yeni = pd.DataFrame([[datetime.now().strftime("%d.%m.%Y"), st.session_state['kullanici']['ad'], st.session_state['kullanici']['tc'], st.session_state['kullanici']['tel'], loc, a['ad'], days, total]], 
                                     columns=["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"])
                 yeni.to_csv(DATA_FILE, mode='a', header=False, index=False)
-                st.success(f"Rezervasyon Tamamlandı: {arac['ad']}")
+                st.success("Rezervasyon Başarılı!")
 
-    with tab2:
-        st.markdown("<h3 style='font-weight: 900;'>Geçmiş Kiralamalar</h3>", unsafe_allow_html=True)
+    with t2:
+        st.markdown("<h4 style='font-weight:800;'>Rezervasyon Geçmişi</h4>", unsafe_allow_html=True)
         df = pd.read_csv(DATA_FILE)
         user_df = df[df['TC'].astype(str) == str(st.session_state['kullanici']['tc'])]
-        
         if not user_df.empty:
             for _, row in user_df.iterrows():
                 st.markdown(f"""
-                <div style="background: white; padding: 20px; border-radius: 20px; border: 2px solid #CBD5E1; margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-weight: 900; font-size: 20px;">{row['Arac']}</div>
-                        <div style="color: #059669; font-weight: 900;">ONAYLANDI</div>
+                <div class="car-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="font-size:18px;">{row['Arac']}</b>
+                        <span style="color:#059669; font-size:12px; font-weight:800;">ONAYLANDI</span>
                     </div>
-                    <div style="font-size: 14px; font-weight: 700; color: #475569; margin-top: 5px;">{row['Tarih']} • {row['Konum']}</div>
-                    <div style="margin-top: 10px; font-size: 18px; font-weight: 900;">{row['ToplamTutar']} ₺</div>
+                    <div style="font-size:13px; opacity:0.7;">{row['Tarih']} | {row['Konum']}</div>
+                    <div style="margin-top:8px; font-weight:800;">{row['ToplamTutar']} ₺</div>
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.warning("Henüz bir arac kiralamadınız.")
+            st.info("Henüz kaydınız yok.")
 
-    with tab3:
+    with t3:
         k = st.session_state['kullanici']
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); padding: 35px 25px; border-radius: 25px; box-shadow: 0 15px 30px rgba(0,0,0,0.3);">
-            <div style="color: #94A3B8 !important; font-size: 12px; font-weight: 900; letter-spacing: 2px;">DRIVENOW VIP CARD</div>
-            <div style="color: #FFFFFF !important; font-size: 28px; font-weight: 900; margin: 20px 0;">{k['ad']}</div>
-            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
-                <div style="color: #FFFFFF !important; font-weight: 700;">TC: {k['tc']}</div>
-                <div style="color: #FFFFFF !important; font-weight: 700;">TEL: +90 {k['tel']}</div>
+        <div class="vip-card">
+            <div style="font-size:11px; letter-spacing:2px; opacity:0.8; margin-bottom:15px;">DRIVENOW VIP SÜRÜCÜ KARTI</div>
+            <div style="font-size:26px; font-weight:900; text-transform:uppercase; margin-bottom:20px;">{k['ad']}</div>
+            <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:15px;">
+                <div style="font-size:13px;">TC: {k['tc']}</div>
+                <div style="font-size:13px;">TEL: +90 {k['tel']}</div>
             </div>
-            <div style="margin-top: 30px; border-top: 1px dashed rgba(255,255,255,0.4); padding-top: 20px; text-align: center; color: white !important; font-size: 24px; letter-spacing: 6px;">
-                ||| || |||| || |||
+            <div style="margin-top:30px; text-align:center; font-size:24px; letter-spacing:8px; opacity:0.5;">
+                || ||| | || ||||
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.write("")
         if st.button("ÇIKIŞ YAP"):
             st.session_state['kullanici'] = None
             st.rerun()

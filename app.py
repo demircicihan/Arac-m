@@ -5,13 +5,13 @@ import streamlit as st
 
 # --- SAYFA AYARLARI ---
 st.set_page_config(
-    page_title="DriveNow Premium",
+    page_title="DriveNow Premium | Elite Fleet",
     page_icon="🚗",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# --- SENSITIVE DATA / SECRETS MANAGEMENT ---
+# --- SECRETS MANAGEMENT ---
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
@@ -34,36 +34,7 @@ ARACLAR = [
         "puan": "4.9",
         "koltuk": "5 Koltuk",
         "bagaj": "2 Valiz",
-    },
-    {
-        "ad": "Renault Clio",
-        "kat": "HATCHBACK • EKONOMİK",
-        "vites": "Manuel",
-        "yakit": "Benzin",
-        "fiyat": 900,
-        "puan": "4.7",
-        "koltuk": "5 Koltuk",
-        "bagaj": "1 Valiz",
-    },
-    {
-        "ad": "Ford Focus",
-        "kat": "COMPACT • KONFOR",
-        "vites": "Otomatik",
-        "yakit": "Benzin",
-        "fiyat": 1200,
-        "puan": "4.8",
-        "koltuk": "5 Koltuk",
-        "bagaj": "2 Valiz",
-    },
-    {
-        "ad": "Fiat Egea Cross",
-        "kat": "CROSSOVER • EKONOMİK",
-        "vites": "Manuel",
-        "yakit": "Dizel",
-        "fiyat": 850,
-        "puan": "4.6",
-        "koltuk": "5 Koltuk",
-        "bagaj": "2 Valiz",
+        "badge": "🔥 EN ÇOK TERCİH EDİLEN",
     },
     {
         "ad": "Tesla Model 3",
@@ -74,156 +45,225 @@ ARACLAR = [
         "puan": "5.0",
         "koltuk": "5 Koltuk",
         "bagaj": "3 Valiz",
+        "badge": "⚡ TEKNOLOJİ HARİKASI",
+    },
+    {
+        "ad": "Ford Focus",
+        "kat": "COMPACT • KONFOR",
+        "vites": "Otomatik",
+        "yakit": "Benzin",
+        "fiyat": 1200,
+        "puan": "4.8",
+        "koltuk": "5 Koltuk",
+        "bagaj": "2 Valiz",
+        "badge": "🌟 AİLE DİŞİ",
+    },
+    {
+        "ad": "Renault Clio",
+        "kat": "HATCHBACK • EKONOMİK",
+        "vites": "Manuel",
+        "yakit": "Benzin",
+        "fiyat": 900,
+        "puan": "4.7",
+        "koltuk": "5 Koltuk",
+        "bagaj": "1 Valiz",
+        "badge": "💡 ŞEHİR DOSTU",
+    },
+    {
+        "ad": "Fiat Egea Cross",
+        "kat": "CROSSOVER • EKONOMİK",
+        "vites": "Manuel",
+        "yakit": "Dizel",
+        "fiyat": 850,
+        "puan": "4.6",
+        "koltuk": "5 Koltuk",
+        "bagaj": "2 Valiz",
+        "badge": "🛣️ UYGUN & MUKAVEMETLİ",
     },
 ]
 
-# --- TASARIM VE GÖRÜNÜRLÜK (CSS) ---
+# --- MODERN CSS & ANİMASYON TASARIMI ---
 st.markdown(
     """
     <style>
+    /* GENEL ARKA PLAN VE FONTLAR */
     .stApp {
-        background: linear-gradient(160deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%) !important;
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #0F172A 100%) !important;
         background-attachment: fixed !important;
     }
 
     header {visibility: hidden !important;}
     footer {visibility: hidden !important;}
 
-    /* TÜM YAZILAR KOYU LACİVERT */
+    /* YAZI RENKLERİ VE TİPOGRAFİ */
     html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, strong {
-        color: #0F172A !important;
-        -webkit-text-fill-color: #0F172A !important;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif !important;
+        color: #F8FAFC !important;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", Roboto, sans-serif !important;
     }
 
-    /* ARAMA KARTI */
+    /* GLASSMORPHISM ARAMA KARTI */
     .search-card {
-        background: #FFFFFF !important;
-        padding: 20px !important;
-        border-radius: 22px !important;
-        border: 1.5px solid #C7D2FE !important;
-        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08) !important;
-        margin-bottom: 20px !important;
+        background: rgba(30, 41, 59, 0.7) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        padding: 24px !important;
+        border-radius: 28px !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+        margin-bottom: 25px !important;
     }
 
-    /* DETAYLI ARAÇ KARTI */
+    /* MODERN ARAÇ KARTI */
     .car-card-detailed {
-        background: #FFFFFF !important;
-        padding: 22px !important;
-        border-radius: 24px !important;
-        border: 1.5px solid #E2E8F0 !important;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06) !important;
-        margin-bottom: 20px !important;
+        background: rgba(30, 41, 59, 0.65) !important;
+        backdrop-filter: blur(12px) !important;
+        padding: 24px !important;
+        border-radius: 26px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3) !important;
+        margin-bottom: 22px !important;
+        transition: transform 0.3s ease, border-color 0.3s ease !important;
+    }
+    .car-card-detailed:hover {
+        border-color: rgba(99, 102, 241, 0.5) !important;
+        transform: translateY(-2px);
     }
 
-    /* PASTEL ÖZELLİK ETİKETLERİ */
-    .tag-vites { background: #EFF6FF !important; color: #1D4ED8 !important; font-size: 12px; font-weight: 800; padding: 5px 10px; border-radius: 8px; border: 1px solid #BFDBFE; display: inline-block; margin-right: 4px; }
-    .tag-yakit { background: #FEF3C7 !important; color: #B45309 !important; font-size: 12px; font-weight: 800; padding: 5px 10px; border-radius: 8px; border: 1px solid #FDE68A; display: inline-block; margin-right: 4px; }
-    .tag-koltuk { background: #F3E8FF !important; color: #6B21A8 !important; font-size: 12px; font-weight: 800; padding: 5px 10px; border-radius: 8px; border: 1px solid #E9D5FF; display: inline-block; margin-right: 4px; }
-    .tag-bagaj { background: #ECFDF5 !important; color: #047857 !important; font-size: 12px; font-weight: 800; padding: 5px 10px; border-radius: 8px; border: 1px solid #A7F3D0; display: inline-block; }
+    /* CANLI BADGE VE ETİKETLER */
+    .badge-highlight {
+        background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%) !important;
+        color: #FFFFFF !important;
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        padding: 4px 12px !important;
+        border-radius: 20px !important;
+        display: inline-block !important;
+        margin-bottom: 10px !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    .tag-vites { background: rgba(59, 130, 246, 0.15) !important; color: #93C5FD !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(147, 197, 253, 0.2); display: inline-block; margin-right: 6px; }
+    .tag-yakit { background: rgba(245, 158, 11, 0.15) !important; color: #FDE68A !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(253, 230, 138, 0.2); display: inline-block; margin-right: 6px; }
+    .tag-koltuk { background: rgba(168, 85, 247, 0.15) !important; color: #E9D5FF !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(233, 213, 255, 0.2); display: inline-block; margin-right: 6px; }
+    .tag-bagaj { background: rgba(16, 185, 129, 0.15) !important; color: #A7F3D0 !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(167, 243, 208, 0.2); display: inline-block; }
 
     .guarantee-badge {
-        background: #D1FAE5 !important;
-        color: #047857 !important;
+        background: rgba(16, 185, 129, 0.12) !important;
+        color: #34D399 !important;
         font-weight: 800 !important;
         font-size: 12px !important;
-        padding: 6px 12px !important;
-        border-radius: 10px !important;
+        padding: 6px 14px !important;
+        border-radius: 12px !important;
         display: inline-block !important;
-        margin-top: 10px !important;
-        border: 1px solid #A7F3D0 !important;
+        margin-top: 12px !important;
+        border: 1px solid rgba(52, 211, 153, 0.25) !important;
     }
 
+    /* FİYAT KUTUSU */
     .price-row-box {
-        background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%) !important;
-        padding: 14px 18px !important;
-        border-radius: 16px !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        padding: 16px 20px !important;
+        border-radius: 18px !important;
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
-        margin-top: 14px !important;
-        border: 1px solid #C7D2FE !important;
+        margin-top: 16px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
-    /* TURUNCU CTA BUTONLARI */
+    /* CANLI BUTONLAR (GRADIENT) */
     div.stButton > button, div.stFormSubmitButton > button {
-        background: linear-gradient(135deg, #FF6B00 0%, #FF5F00 100%) !important;
+        background: linear-gradient(135deg, #FF6B00 0%, #FF3D00 100%) !important;
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         border-radius: 16px !important;
         border: none !important;
         font-weight: 900 !important;
         font-size: 16px !important;
-        height: 52px !important;
+        height: 54px !important;
         width: 100% !important;
-        box-shadow: 0 8px 20px rgba(255, 95, 0, 0.3) !important;
-        margin-top: 6px !important;
+        box-shadow: 0 10px 25px rgba(255, 107, 0, 0.35) !important;
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
+    }
+    div.stButton > button:hover, div.stFormSubmitButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 14px 30px rgba(255, 107, 0, 0.5) !important;
     }
 
-    /* İNDİRME BUTONLARI DÜZELTMESİ (GÖRSELDEKİ SİYAH BUTON SORUNU İÇİN) */
+    /* İNDİRME BUTONLARI */
     [data-testid="stDownloadButton"] > button {
-        background: #FFFFFF !important;
-        color: #2563EB !important;
-        -webkit-text-fill-color: #2563EB !important;
-        border: 2px solid #2563EB !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #60A5FA !important;
+        -webkit-text-fill-color: #60A5FA !important;
+        border: 1.5px solid rgba(96, 165, 250, 0.4) !important;
         border-radius: 14px !important;
         font-weight: 800 !important;
         height: 48px !important;
         width: 100% !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1) !important;
     }
     [data-testid="stDownloadButton"] > button:hover {
         background: #2563EB !important;
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
     }
-    [data-testid="stDownloadButton"] > button * {
-        color: #2563EB !important;
-        -webkit-text-fill-color: #2563EB !important;
-    }
-    [data-testid="stDownloadButton"] > button:hover * {
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }
 
-    /* DOSYA YÜKLEYİCİ */
-    [data-testid="stFileUploader"] section {
-        background-color: #FFFFFF !important;
-        border: 2px dashed #C7D2FE !important;
-        border-radius: 14px !important;
-        padding: 14px !important;
-    }
-
-    /* INPUT KUTULARI */
+    /* INPUT VE SELECTBOX STİLLERİ */
     input, .stNumberInput div, div[data-baseweb="base-input"], div[data-baseweb="select"] {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border: 1.5px solid #C7D2FE !important;
-        border-radius: 12px !important;
-        -webkit-text-fill-color: #0F172A !important;
+        background-color: rgba(15, 23, 42, 0.8) !important;
+        color: #F8FAFC !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 14px !important;
+        -webkit-text-fill-color: #F8FAFC !important;
+    }
+
+    /* SELECTBOX POPOVER (AÇILIR MENÜ) DÜZELTMESİ */
+    div[data-baseweb="popover"], div[data-baseweb="popover"] * {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+        -webkit-text-fill-color: #F8FAFC !important;
+    }
+    ul[data-baseweb="menu"] {
+        background-color: #1E293B !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 14px !important;
+    }
+    li[data-baseweb="option"] {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+    }
+    li[data-baseweb="option"]:hover, li[aria-selected="true"] {
+        background-color: #334155 !important;
+        color: #38BDF8 !important;
+        -webkit-text-fill-color: #38BDF8 !important;
     }
 
     /* TAB DÜZENİ */
     div[data-baseweb="tab-list"] {
-        background-color: rgba(199, 210, 254, 0.5) !important;
+        background-color: rgba(30, 41, 59, 0.8) !important;
         backdrop-filter: blur(10px) !important;
-        border-radius: 18px !important;
-        padding: 5px !important;
-        border: 1px solid rgba(255,255,255,0.8) !important;
-        margin-bottom: 15px !important;
+        border-radius: 20px !important;
+        padding: 6px !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        margin-bottom: 20px !important;
     }
     div[aria-selected="true"] {
-        background: #FFFFFF !important;
+        background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%) !important;
         border-radius: 14px !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15) !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
+    }
+    div[aria-selected="true"] span {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
     }
 
-    /* VIP KART YAZI RENKLERİ OVERRIDE */
+    /* VIP SÜRÜCÜ KARTI */
     .vip-card {
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
-        padding: 24px !important;
-        border-radius: 24px !important;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.22) !important;
+        background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%) !important;
+        padding: 26px !important;
+        border-radius: 26px !important;
+        border: 1px solid rgba(147, 197, 253, 0.2) !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
         margin-bottom: 20px !important;
     }
     .vip-card * {
@@ -231,13 +271,13 @@ st.markdown(
         -webkit-text-fill-color: #FFFFFF !important;
     }
     .vip-card .vip-tag {
-        color: #93C5FD !important;
-        -webkit-text-fill-color: #93C5FD !important;
+        color: #38BDF8 !important;
+        -webkit-text-fill-color: #38BDF8 !important;
     }
     .vip-card .vip-subtext {
-        opacity: 0.7;
-        color: #CBD5E1 !important;
-        -webkit-text-fill-color: #CBD5E1 !important;
+        opacity: 0.65;
+        color: #94A3B8 !important;
+        -webkit-text-fill-color: #94A3B8 !important;
     }
     </style>
 """,
@@ -277,12 +317,12 @@ if "secili" not in st.session_state:
 if not st.session_state["auth"]:
     st.markdown(
         """
-        <div style="text-align: center; padding: 20px 0 10px 0;">
-            <div style="background: #1E293B; color: #FFF !important; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; display: inline-block; margin-bottom: 10px;">
-                📍 Türkiye Geneli 7/24 Teslimat
+        <div style="text-align: center; padding: 30px 0 20px 0;">
+            <div style="background: rgba(99, 102, 241, 0.15); color: #818CF8 !important; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 800; display: inline-block; margin-bottom: 12px; border: 1px solid rgba(129, 140, 248, 0.3);">
+                📍 Türkiye Geneli VIP Adrese Delivery
             </div>
-            <h1 style="font-size: 38px; font-weight: 900; margin: 0; color: #0F172A;">DriveNow</h1>
-            <p style="font-size: 15px; font-weight: 600; color: #475569;">Premium Araç Kiralama Deneyimi</p>
+            <h1 style="font-size: 42px; font-weight: 900; margin: 0; background: linear-gradient(90deg, #FFFFFF 0%, #38BDF8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">DriveNow</h1>
+            <p style="font-size: 16px; font-weight: 600; color: #94A3B8;">Ayrıcalıklı Sürüş & Premium Filo Deneyimi</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -290,7 +330,7 @@ if not st.session_state["auth"]:
 
     with st.form("login_form"):
         st.markdown(
-            "<p style='font-size: 16px; font-weight: 800; margin-bottom: 8px;'>👋 Lütfen Bilgilerinizi Girin</p>",
+            "<p style='font-size: 17px; font-weight: 800; margin-bottom: 12px;'>👋 Hoş Geldiniz, Bilgilerinizi Girin</p>",
             unsafe_allow_html=True,
         )
         ad = st.text_input("Ad Soyad", placeholder="Örn: Cihan Demirci")
@@ -301,7 +341,7 @@ if not st.session_state["auth"]:
             "Telefon No", max_chars=10, placeholder="5XXXXXXXXX"
         )
 
-        submit = st.form_submit_button("ARAÇLARI LİSTELE ➔")
+        submit = st.form_submit_button("LÜKS FİLOYU KEŞFET ➔")
 
         if submit:
             tc_clean = tc.strip()
@@ -331,14 +371,14 @@ if not st.session_state["auth"]:
 
 else:
     # --- ANA UYGULAMA (TABS) ---
-    t1, t2, t3 = st.tabs(["🚗 Araç Seçimi", "📋 Kayıtlarım", "👤 Admin"])
+    t1, t2, t3 = st.tabs(["🏎️ Araç Filosu", "📜 Kiralama Kayıtlarım", "🔑 Yönetici"])
 
     with t1:
         if st.session_state["secili"] is None:
             # 🔍 ARAMA & FİLTRELEME PANELİ
             st.markdown('<div class="search-card">', unsafe_allow_html=True)
             st.markdown(
-                f"<div style='font-size:16px; font-weight:900;'>👋 Merhaba, {st.session_state['user']['ad']}</div>",
+                f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>",
                 unsafe_allow_html=True,
             )
 
@@ -377,25 +417,26 @@ else:
                 card_html = f"""
                 <div class="car-card-detailed">
                     <div>
-                        <span style="font-size:11px; font-weight:900; color:#2563EB; letter-spacing:0.5px;">{a['kat']}</span>
-                        <span style="background:#FEF3C7; color:#B45309; font-size:12px; font-weight:900; padding:3px 8px; border-radius:8px; float:right;">★ {a['puan']}</span>
+                        <span class="badge-highlight">{a['badge']}</span>
+                        <span style="background:rgba(251, 191, 36, 0.2); color:#FBBF24; font-size:12px; font-weight:900; padding:4px 10px; border-radius:10px; float:right; border: 1px solid rgba(251, 191, 36, 0.3);">★ {a['puan']}</span>
                     </div>
-                    <div style="font-size:24px; font-weight:900; color:#0F172A; margin:4px 0 10px 0;">{a['ad']}</div>
-                    <div style="margin-bottom:12px;">
+                    <div style="font-size:11px; font-weight:900; color:#818CF8; letter-spacing:1px; margin-top:2px;">{a['kat']}</div>
+                    <div style="font-size:26px; font-weight:900; color:#FFFFFF; margin:4px 0 12px 0;">{a['ad']}</div>
+                    <div style="margin-bottom:14px;">
                         <span class="tag-vites">🔀 {a['vites']}</span>
                         <span class="tag-yakit">⛽ {a['yakit']}</span>
                         <span class="tag-koltuk">👥 {a['koltuk']}</span>
                         <span class="tag-bagaj">🧳 {a['bagaj']}</span>
                     </div>
-                    <div><span class="guarantee-badge">✓ Sınırsız KM • Full Kasko • Ücretsiz İptal</span></div>
+                    <div><span class="guarantee-badge">🟢 Anında Teslim • Sınırsız KM • Full Kasko</span></div>
                     <div class="price-row-box">
                         <div>
-                            <div style="font-size:10px; font-weight:800; color:#64748B;">GÜNLÜK FİYAT</div>
-                            <div style="font-size:18px; font-weight:900; color:#2563EB;">{a['fiyat']:,} ₺</div>
+                            <div style="font-size:10px; font-weight:800; color:#94A3B8;">GÜNLÜK BİRİM</div>
+                            <div style="font-size:20px; font-weight:900; color:#38BDF8;">{a['fiyat']:,} ₺</div>
                         </div>
                         <div style="text-align:right;">
-                            <div style="font-size:10px; font-weight:800; color:#64748B;">{gun} GÜNLÜK TOPLAM</div>
-                            <div style="font-size:22px; font-weight:900; color:#0F172A;">{toplam_tutar:,} ₺</div>
+                            <div style="font-size:10px; font-weight:800; color:#94A3B8;">{gun} GÜNLÜK TOPLAM</div>
+                            <div style="font-size:24px; font-weight:900; color:#FF6B00;">{toplam_tutar:,} ₺</div>
                         </div>
                     </div>
                 </div>
@@ -403,7 +444,7 @@ else:
                 st.markdown(card_html, unsafe_allow_html=True)
 
                 if st.button(
-                    f"Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"
+                    f"⚡ Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"
                 ):
                     st.session_state["secili"] = {
                         "ad": a["ad"],
@@ -419,23 +460,23 @@ else:
                 st.warning("Seçilen vites tipine uygun araç bulunamadı.")
 
         else:
-            # 🔒 DETAYLI KİRALAMA & KİMLİK EKRANI
+            # 🔒 KİRALAMA VE DOĞRULAMA
             s = st.session_state["secili"]
             u = st.session_state["user"]
 
             st.markdown(
-                "<h3 style='font-size:22px; font-weight:900;'>🔒 Kiralama ve Kimlik Doğrulama</h3>",
+                "<h3 style='font-size:22px; font-weight:900;'>🔒 Rezerve ve Ehliyet Doğrulama</h3>",
                 unsafe_allow_html=True,
             )
 
             summary_html = f"""
-            <div class="car-card-detailed" style="border-left: 6px solid #2563EB !important;">
-                <div style="font-size:12px; font-weight:900; color:#2563EB;">SEÇİLEN ARAÇ VE DETAYLAR</div>
-                <div style="font-size:24px; font-weight:900; margin:4px 0;">{s['ad']}</div>
-                <div style="font-size:13px; color:#475569; font-weight:700;">📍 {s['konum']} | ⏱ {s['gun']} Günlük Kiralama</div>
-                <div class="price-row-box" style="margin-top:10px;">
-                    <div style="font-size:13px; font-weight:800;">Toplam Ödenecek Tutar:</div>
-                    <div style="font-size:22px; font-weight:900; color:#FF6B00;">{s['toplam']:,} ₺</div>
+            <div class="car-card-detailed" style="border-left: 6px solid #38BDF8 !important;">
+                <div style="font-size:12px; font-weight:900; color:#38BDF8;">SEÇTİĞİNİZ ARAÇ ÖZETİ</div>
+                <div style="font-size:26px; font-weight:900; margin:4px 0;">{s['ad']}</div>
+                <div style="font-size:14px; color:#94A3B8; font-weight:700;">📍 {s['konum']} | ⏱ {s['gun']} Gün Kiralama</div>
+                <div class="price-row-box" style="margin-top:14px;">
+                    <div style="font-size:14px; font-weight:800;">Toplam Ödenecek Tutar:</div>
+                    <div style="font-size:24px; font-weight:900; color:#FF6B00;">{s['toplam']:,} ₺</div>
                 </div>
             </div>
             """
@@ -443,7 +484,7 @@ else:
 
             with st.form("kiralama_onay_formu"):
                 st.markdown(
-                    "<p style='font-size:15px; font-weight:800; margin-bottom:10px;'>📄 Ehliyet ve Doğrulama Bilgileri</p>",
+                    "<p style='font-size:15px; font-weight:800; margin-bottom:10px;'>📄 Ehliyet ve Onay Bilgileri</p>",
                     unsafe_allow_html=True,
                 )
 
@@ -469,7 +510,7 @@ else:
                     type=["jpg", "jpeg", "png"],
                 )
 
-                onay = st.form_submit_button("KİRALAMAYI ONAYLA VE TAMAMLA ➔")
+                onay = st.form_submit_button("REZERVASYONU ONAYLA VE TAMAMLA ➔")
 
                 if onay:
                     if ehliyet_no.strip() and dosya is not None:
@@ -488,7 +529,7 @@ else:
 
                         st.balloons()
                         st.success(
-                            f"🎉 Tebrikler Sayın {u['ad']}! {s['ad']} aracınız rezerve edildi."
+                            f"🎉 Tebrikler Sayın {u['ad']}! {s['ad']} aracınız başarıyla rezerve edildi."
                         )
                         st.session_state["secili"] = None
                         st.rerun()
@@ -497,7 +538,7 @@ else:
                             "Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin."
                         )
 
-            if st.button("⬅️ Başka Araç Seç"):
+            if st.button("⬅️ Başka Araç Seç":
                 st.session_state["secili"] = None
                 st.rerun()
 
@@ -517,9 +558,9 @@ else:
                         bulundu = True
                         st.markdown(
                             f"""
-                            <div class="car-card-detailed" style="border-left: 6px solid #059669 !important; padding: 14px !important;">
-                                <div style="font-size: 12px; color: #059669; font-weight: 900;">✓ KAYIT ONAYLANDI</div>
-                                <div style="font-size: 14px; font-weight: 700; margin-top: 4px;">{satir.strip()}</div>
+                            <div class="car-card-detailed" style="border-left: 6px solid #10B981 !important; padding: 16px !important;">
+                                <div style="font-size: 12px; color: #34D399; font-weight: 900;">✓ KAYIT AKTİF</div>
+                                <div style="font-size: 14px; font-weight: 700; margin-top: 6px;">{satir.strip()}</div>
                             </div>
                             """,
                             unsafe_allow_html=True,
@@ -535,12 +576,12 @@ else:
         driver_card_html = f"""
         <div class="vip-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <span class="vip-tag" style="font-size:12px; font-weight:900; letter-spacing:2px;">DRIVENOW VIP CARD</span>
+                <span class="vip-tag" style="font-size:12px; font-weight:900; letter-spacing:2px;">DRIVENOW VIP MEMBER</span>
                 <span style="font-size:20px;">💎</span>
             </div>
             <div class="vip-subtext" style="font-size:11px;">SÜRÜCÜ AD SOYAD</div>
-            <div style="font-size:22px; font-weight:900; text-transform:uppercase; margin-bottom:14px;">{u['ad']}</div>
-            <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.1); padding:12px; border-radius:12px;">
+            <div style="font-size:24px; font-weight:900; text-transform:uppercase; margin-bottom:16px;">{u['ad']}</div>
+            <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.06); padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
                 <div>
                     <div class="vip-subtext" style="font-size:10px;">TC NO</div>
                     <div style="font-size:14px; font-weight:800;">{u['tc']}</div>
@@ -554,7 +595,7 @@ else:
         """
         st.markdown(driver_card_html, unsafe_allow_html=True)
 
-        # 🔒 ŞİFRELİ YÖNETİCİ PANELİ
+        # 🔒 YÖNETİCİ PANELİ
         lock = st.checkbox("🔒 Yönetici Paneli Girişi")
         if lock:
             sifre = st.text_input("Admin Şifresi", type="password")
@@ -590,7 +631,7 @@ else:
                 if fotolar:
                     for f in fotolar:
                         f_path = os.path.join(UPLOAD_DIR, f)
-                        st.image(f_path, caption=f, width=220)
+                        st.image(f_path, caption=f, width=240)
                         with open(f_path, "rb") as file:
                             st.download_button(
                                 f"Fotoğrafı İndir: {f}",

@@ -517,7 +517,7 @@ else:
 
     with t1:
         if st.session_state["secili"] is None:
-            # 🔍 ARAMA & FİLTRELEME PANELİ
+            # 🔍 ARAMA & FİLTRELEME PANELİ (GENİŞLETİLMİŞ TESLİMAT NOKTALARI)
             st.markdown('<div class="search-card">', unsafe_allow_html=True)
             st.markdown(
                 f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>",
@@ -529,6 +529,10 @@ else:
                 konum = st.selectbox(
                     "📍 Teslimat Noktası",
                     [
+                        "Konya • Ereğli Merkez / KYK",
+                        "Konya • Çumra İlçe Merkezi",
+                        "Konya • Selçuklu / Otogar",
+                        "Konya • Havalimanı (KYA)",
                         "İstanbul • Sabiha Gökçen HL",
                         "İstanbul • İstanbul Havalimanı",
                         "Ankara • Esenboğa HL",

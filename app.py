@@ -159,6 +159,18 @@ st.markdown(
         border: 1px solid rgba(52, 211, 153, 0.25) !important;
     }
 
+    .payment-notice-badge {
+        background: rgba(16, 185, 129, 0.15) !important;
+        color: #34D399 !important;
+        font-weight: 800 !important;
+        font-size: 13px !important;
+        padding: 10px 16px !important;
+        border-radius: 14px !important;
+        display: block !important;
+        margin-bottom: 16px !important;
+        border: 1px solid rgba(52, 211, 153, 0.3) !important;
+    }
+
     /* FİYAT KUTUSU */
     .price-row-box {
         background: rgba(15, 23, 42, 0.6) !important;
@@ -484,7 +496,13 @@ else:
 
             with st.form("kiralama_onay_formu"):
                 st.markdown(
-                    "<p style='font-size:15px; font-weight:800; margin-bottom:10px;'>📄 Ehliyet ve Onay Bilgileri</p>",
+                    "<p style='font-size:16px; font-weight:800; margin-bottom:6px;'>📄 Ehliyet ve Onay Bilgileri</p>",
+                    unsafe_allow_html=True,
+                )
+                
+                # ÖDEME BİLGİLENDİRME BÖLÜMÜ
+                st.markdown(
+                    '<span class="payment-notice-badge">💵 Ödeme İşlemi: Toplam tutar araç teslimatı sırasında nakit veya kredi kartı ile tahsil edilecektir.</span>',
                     unsafe_allow_html=True,
                 )
 

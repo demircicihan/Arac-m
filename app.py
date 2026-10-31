@@ -23,7 +23,7 @@ ARACLAR = [
     {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "fiyat": 2500}
 ]
 
-# --- GÖRÜNÜR KISIMLARI DÜZELTEN CSS ---
+# --- KARANLIK MODU VE SİYAH KUTULARI YOK EDEN CSS ---
 st.markdown("""
     <style>
     /* 1. TÜM ZEMİN VE YAZI KONTROLÜ */
@@ -35,22 +35,19 @@ st.markdown("""
     }
 
     /* 2. DOSYA YÜKLEYİCİ (FILE UPLOADER) DÜZELTME */
-    /* Siyah kutuyu beyaza çevirir */
     [data-testid="stFileUploader"] section {
         background-color: #F8FAFC !important;
         border: 2px dashed #CBD5E1 !important;
         border-radius: 12px !important;
-        padding: 10px !important;
+        padding: 15px !important;
     }
     
-    /* Dosya yükleyici içindeki küçük yazılar ve 'upload' yazısı */
     [data-testid="stFileUploader"] label, [data-testid="stFileUploader"] div, [data-testid="stFileUploader"] small {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
     }
 
     /* 3. İNDİRME BUTONLARI (DOWNLOAD BUTTON) DÜZELTME */
-    /* Kararan butonları turuncu veya beyaz yapalım */
     [data-testid="stDownloadButton"] > button {
         background-color: #FFFFFF !important;
         color: #FF6B00 !important;
@@ -58,15 +55,14 @@ st.markdown("""
         border-radius: 12px !important;
         font-weight: 800 !important;
         width: 100% !important;
-        margin-top: 5px !important;
     }
     
-    [data-testid="stDownloadButton"] > button:hover {
-        background-color: #FF6B00 !important;
-        color: #FFFFFF !important;
+    [data-testid="stDownloadButton"] > button p {
+        color: #FF6B00 !important;
+        -webkit-text-fill-color: #FF6B00 !important;
     }
 
-    /* 4. GENEL GİRİŞ KUTULARI (INPUTLAR) */
+    /* 4. GENEL GİRİŞ KUTULARI */
     input, .stNumberInput div, div[data-baseweb="base-input"] {
         background-color: #F8FAFC !important;
         color: #000000 !important;
@@ -74,9 +70,9 @@ st.markdown("""
         border-radius: 10px !important;
     }
 
-    /* 5. ANA TURUNCU BUTON (KİRALAMAYI TAMAMLA) */
+    /* 5. TURUNCU BUTONLAR */
     div.stButton > button, div.stFormSubmitButton > button {
-        background: linear-gradient(135deg, #FF6B00 0%, #FF5F00 100%) !important;
+        background: #FF6B00 !important;
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         border: none !important;
@@ -86,7 +82,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3) !important;
     }
 
-    /* Kartlar */
     .custom-card {
         background-color: #FFFFFF !important;
         padding: 20px !important;
@@ -108,8 +103,7 @@ def kaydet(tip, mesaj):
 
 def kayitlari_ayristir():
     if not os.path.exists(LOG_FILE): return "", ""
-    girisler = []
-    kiralama = []
+    girisler, kiralama = [], []
     with open(LOG_FILE, "r", encoding="utf-8-sig") as f:
         for satir in f:
             if "| GİRİŞ |" in satir: girisler.append(satir.strip())
@@ -139,7 +133,7 @@ else:
     with t1:
         if st.session_state['secili'] is None:
             st.markdown(f"<h3>Hoş geldin, {st.session_state['user']['ad']}</h3>", unsafe_allow_html=True)
-            gun = st.number_input("Gün", min_value=1, value=1)
+            gun = st.number_input("Gün Sayısı", min_value=1, value=1)
             for a in ARACLAR:
                 fiyat = a['fiyat'] * gun
                 st.markdown(f"<div class='custom-card'><b>{a['ad']}</b><br>{fiyat} ₺</div>", unsafe_allow_html=True)
@@ -150,7 +144,7 @@ else:
             with st.form("kiralama_onay"):
                 st.write(f"Araç: {st.session_state['secili']['ad']}")
                 ehliyet = st.text_input("Ehliyet No")
-                dosya = st.file_uploader("Ehliyet Fotoğrafı", type=['jpg','png'])
+                dosya = st.file_uploader("Ehliyet Fotoğrafı Yükle", type=['jpg','png'])
                 if st.form_submit_button("KİRALAMAYI TAMAMLA"):
                     if ehliyet and dosya:
                         foto_ad = f"{st.session_state['user']['tc']}_{datetime.now().strftime('%H%M%S')}.jpg"
@@ -164,7 +158,7 @@ else:
                 st.session_state['secili'] = None
                 st.rerun()
 
-    with tab2:
+    with t2:
         st.subheader("İşlemleriniz")
         u_ad = st.session_state['user']['ad']
         if os.path.exists(LOG_FILE):
@@ -173,7 +167,7 @@ else:
                     if u_ad in satir:
                         st.markdown(f"<div class='custom-card'>{satir}</div>", unsafe_allow_html=True)
 
-    with tab3:
+    with t3:
         lock = st.checkbox("🔒 Yönetici Girişi")
         if lock:
             sifre = st.text_input("Şifre", type="password")
@@ -181,11 +175,9 @@ else:
                 st.success("Admin Yetkisi Aktif.")
                 g_logs, k_logs = kayitlari_ayristir()
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.download_button("📥 Giriş Kayıtlarını İndir", g_logs, "giris_yapanlar.txt")
-                with col2:
-                    st.download_button("📥 Kiralama Kayıtlarını İndir", k_logs, "kiralama_kayitlari.txt")
+                c1, c2 = st.columns(2)
+                with c1: st.download_button("📥 Girişleri İndir", g_logs, "girisler.txt")
+                with c2: st.download_button("📥 Kiralamaları İndir", k_logs, "kiralamalar.txt")
                 
                 st.markdown("<b>Yüklenen Resimler:</b>", unsafe_allow_html=True)
                 fotolar = os.listdir(UPLOAD_DIR)

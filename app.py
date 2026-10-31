@@ -12,7 +12,6 @@ st.set_page_config(
 )
 
 # --- SENSITIVE DATA / SECRETS MANAGEMENT ---
-# Secrets içinde yoksa varsayılan şifreyi kullanır
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
@@ -192,6 +191,28 @@ st.markdown(
         border-radius: 14px !important;
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15) !important;
     }
+
+    /* VIP KART YAZI RENKLERİ OVERRIDE */
+    .vip-card {
+        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
+        padding: 24px !important;
+        border-radius: 24px !important;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.22) !important;
+        margin-bottom: 20px !important;
+    }
+    .vip-card * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+    .vip-card .vip-tag {
+        color: #93C5FD !important;
+        -webkit-text-fill-color: #93C5FD !important;
+    }
+    .vip-card .vip-subtext {
+        opacity: 0.7;
+        color: #CBD5E1 !important;
+        -webkit-text-fill-color: #CBD5E1 !important;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -218,7 +239,7 @@ def kayitlari_ayristir():
     return "\n".join(girisler), "\n".join(kiralama)
 
 
-# --- OTURUM YÖNETİMİ İNİTİALİZATİON ---
+# --- OTURUM YÖNETİMİ ---
 if "auth" not in st.session_state:
     st.session_state["auth"] = False
 if "user" not in st.session_state:
@@ -426,10 +447,7 @@ else:
 
                 if onay:
                     if ehliyet_no.strip() and dosya is not None:
-                        # Güvenli Dosya Adı
-                        safe_car_name = re.sub(
-                            r"[^\w\-]", "_", s["ad"]
-                        )  # Özel karakterleri temizleme
+                        safe_car_name = re.sub(r"[^\w\-]", "_", s["ad"])
                         ext = os.path.splitext(dosya.name)[1]
                         foto_ad = f"{u['tc']}_{safe_car_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
                         dosya_yolu = os.path.join(UPLOAD_DIR, foto_ad)
@@ -487,23 +505,23 @@ else:
     with t3:
         u = st.session_state["user"]
 
-        # VIP Card UI
+        # YENİLENMİŞ VIP SÜRÜCÜ KARTI (Tüm metinler yüksek görünürlükte beyaz)
         driver_card_html = f"""
-        <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 24px; border-radius: 24px; color: #FFF !important; box-shadow: 0 12px 30px rgba(0,0,0,0.22); margin-bottom: 20px;">
+        <div class="vip-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <span style="font-size:12px; font-weight:900; letter-spacing:2px; color:#93C5FD;">DRIVENOW VIP CARD</span>
+                <span class="vip-tag" style="font-size:12px; font-weight:900; letter-spacing:2px;">DRIVENOW VIP CARD</span>
                 <span style="font-size:20px;">💎</span>
             </div>
-            <div style="font-size:11px; opacity:0.7; color:#FFF;">SÜRÜCÜ AD SOYAD</div>
-            <div style="font-size:22px; font-weight:900; color:#FFF; text-transform:uppercase; margin-bottom:14px;">{u['ad']}</div>
+            <div class="vip-subtext" style="font-size:11px;">SÜRÜCÜ AD SOYAD</div>
+            <div style="font-size:22px; font-weight:900; text-transform:uppercase; margin-bottom:14px;">{u['ad']}</div>
             <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.1); padding:12px; border-radius:12px;">
                 <div>
-                    <div style="font-size:10px; opacity:0.7; color:#FFF;">TC NO</div>
-                    <div style="font-size:14px; font-weight:800; color:#FFF;">{u['tc']}</div>
+                    <div class="vip-subtext" style="font-size:10px;">TC NO</div>
+                    <div style="font-size:14px; font-weight:800;">{u['tc']}</div>
                 </div>
                 <div>
-                    <div style="font-size:10px; opacity:0.7; color:#FFF;">TELEFON</div>
-                    <div style="font-size:14px; font-weight:800; color:#FFF;">+90 {u['tel']}</div>
+                    <div class="vip-subtext" style="font-size:10px;">TELEFON</div>
+                    <div style="font-size:14px; font-weight:800;">+90 {u['tel']}</div>
                 </div>
             </div>
         </div>

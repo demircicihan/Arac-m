@@ -23,7 +23,7 @@ if not os.path.exists(LOG_FILE):
     with open(LOG_FILE, "w", encoding="utf-8-sig") as f:
         f.write("")
 
-# --- DETAYLANDIRILMIŞ ULTRA ARAÇ FİLOSU ---
+# --- DETAYLANDIRILMIŞ ULTRA ARAÇ FİLOSU (FOTOĞRAFSAN ARINDIRILMIŞ) ---
 ARACLAR = [
     {
         "ad": "Peugeot 508 GT",
@@ -55,7 +55,7 @@ ARACLAR = [
         "sanziman": "Tek Vitesli Otomatik",
         "tuketim": "14.4 kWh / 100km",
         "hizlanma": "0-100 km/s: 6.1 sn",
-        "donanimlar": ["Autopilot", "Cam Tavan", "15\" Dokunmatik Ekran", "Koltuk Isıtma"],
+        "donanimlar": ["Autopilot", "Cam Tavan", "15 Touchscreen", "Koltuk Isıtma"],
     },
     {
         "ad": "Ford Focus",
@@ -103,7 +103,7 @@ ARACLAR = [
         "sanziman": "5 İleri Manuel",
         "tuketim": "4.4 Lt / 100km",
         "hizlanma": "0-100 km/s: 12.8 sn",
-        "donanimlar": ["Yüksek Sürüş Pozisyonu", "City Modu", "10\" Tablet Ekran", "Tavan Çıtaları"],
+        "donanimlar": ["Yüksek Sürüş Pozisyonu", "City Modu", "10 Tablet Ekran", "Tavan Çıtaları"],
     },
 ]
 
@@ -210,7 +210,6 @@ st.markdown(
         padding: 6px 14px !important;
         border-radius: 12px !important;
         display: inline-block !important;
-        margin-top: 10px !important;
         border: 1px solid rgba(52, 211, 153, 0.25) !important;
     }
 
@@ -472,7 +471,7 @@ else:
                 )
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 🚗 DETAYLI ARAÇ LİSTESİ
+            # 🚗 DETAYLI ARAÇ LİSTESİ (HTML GÖRSEL KARTLAR)
             musait_sayisi = 0
             for a in ARACLAR:
                 if vites_filtre != "Tümü" and a["vites"] != vites_filtre:
@@ -481,56 +480,43 @@ else:
                 musait_sayisi += 1
                 toplam_tutar = a["fiyat"] * gun
 
-                chips_html = "".join(
-                    [
-                        f'<span class="feature-chip">✨ {d}</span>'
-                        for d in a["donanimlar"]
-                    ]
+                chips_list = [f'<span class="feature-chip">✨ {d}</span>' for d in a["donanimlar"]]
+                chips_html = "".join(chips_list)
+
+                card_html = (
+                    f'<div class="car-card-detailed">'
+                    f'<div>'
+                    f'<span class="badge-highlight">{a["badge"]}</span>'
+                    f'<span style="background:rgba(251, 191, 36, 0.2); color:#FBBF24; font-size:12px; font-weight:900; padding:4px 10px; border-radius:10px; float:right; border: 1px solid rgba(251, 191, 36, 0.3);">★ {a["puan"]}</span>'
+                    f'</div>'
+                    f'<div style="font-size:11px; font-weight:900; color:#818CF8; letter-spacing:1px; margin-top:2px;">{a["kat"]}</div>'
+                    f'<div style="font-size:26px; font-weight:900; color:#FFFFFF; margin:4px 0 10px 0;">{a["ad"]}</div>'
+                    f'<div>'
+                    f'<span class="tag-vites">🔀 {a["vites"]}</span>'
+                    f'<span class="tag-yakit">⛽ {a["yakit"]}</span>'
+                    f'<span class="tag-koltuk">👥 {a["koltuk"]}</span>'
+                    f'<span class="tag-bagaj">🧳 {a["bagaj"]}</span>'
+                    f'</div>'
+                    f'<div class="tech-grid">'
+                    f'<div class="tech-item">⚙️ <b>Motor:</b> {a["motor"]}</div>'
+                    f'<div class="tech-item">🕹️ <b>Şanzıman:</b> {a["sanziman"]}</div>'
+                    f'<div class="tech-item">⛽ <b>Tüketim:</b> {a["tuketim"]}</div>'
+                    f'<div class="tech-item">🚀 <b>Hızlanma:</b> {a["hizlanma"]}</div>'
+                    f'</div>'
+                    f'<div style="margin-top:8px;">{chips_html}</div>'
+                    f'<div style="margin-top:10px;"><span class="guarantee-badge">🟢 Anında Teslim • Sınırsız KM • Full Kasko</span></div>'
+                    f'<div class="price-row-box">'
+                    f'<div>'
+                    f'<div style="font-size:10px; font-weight:800; color:#94A3B8;">GÜNLÜK BİRİM</div>'
+                    f'<div style="font-size:20px; font-weight:900; color:#38BDF8;">{a["fiyat"]:,} ₺</div>'
+                    f'</div>'
+                    f'<div style="text-align:right;">'
+                    f'<div style="font-size:10px; font-weight:800; color:#94A3B8;">{gun} GÜNLÜK TOPLAM</div>'
+                    f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{toplam_tutar:,} ₺</div>'
+                    f'</div>'
+                    f'</div>'
+                    f'</div>'
                 )
-
-                card_html = f"""
-                <div class="car-card-detailed">
-                    <div>
-                        <span class="badge-highlight">{a['badge']}</span>
-                        <span style="background:rgba(251, 191, 36, 0.2); color:#FBBF24; font-size:12px; font-weight:900; padding:4px 10px; border-radius:10px; float:right; border: 1px solid rgba(251, 191, 36, 0.3);">★ {a['puan']}</span>
-                    </div>
-                    <div style="font-size:11px; font-weight:900; color:#818CF8; letter-spacing:1px; margin-top:2px;">{a['kat']}</div>
-                    <div style="font-size:26px; font-weight:900; color:#FFFFFF; margin:4px 0 10px 0;">{a['ad']}</div>
-                    
-                    <div>
-                        <span class="tag-vites">🔀 {a['vites']}</span>
-                        <span class="tag-yakit">⛽ {a['yakit']}</span>
-                        <span class="tag-koltuk">👥 {a['koltuk']}</span>
-                        <span class="tag-bagaj">🧳 {a['bagaj']}</span>
-                    </div>
-
-                    <div class="tech-grid">
-                        <div class="tech-item">⚙️ <b>Motor:</b> {a['motor']}</div>
-                        <div class="tech-item">🕹️ <b>Şanzıman:</b> {a['sanziman']}</div>
-                        <div class="tech-item">⛽ <b>Tüketim:</b> {a['tuketim']}</div>
-                        <div class="tech-item">🚀 <b>Hızlanma:</b> {a['hizlanma']}</div>
-                    </div>
-
-                    <div style="margin-top:6px;">
-                        {chips_html}
-                    </div>
-
-                    <div style="margin-top:8px;">
-                        <span class="guarantee-badge">🟢 Anında Teslim • Sınırsız KM • Full Kasko</span>
-                    </div>
-
-                    <div class="price-row-box">
-                        <div>
-                            <div style="font-size:10px; font-weight:800; color:#94A3B8;">GÜNLÜK BİRİM</div>
-                            <div style="font-size:20px; font-weight:900; color:#38BDF8;">{a['fiyat']:,} ₺</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:10px; font-weight:800; color:#94A3B8;">{gun} GÜNLÜK TOPLAM</div>
-                            <div style="font-size:24px; font-weight:900; color:#FF6B00;">{toplam_tutar:,} ₺</div>
-                        </div>
-                    </div>
-                </div>
-                """
                 st.markdown(card_html, unsafe_allow_html=True)
 
                 if st.button(
@@ -559,17 +545,17 @@ else:
                 unsafe_allow_html=True,
             )
 
-            summary_html = f"""
-            <div class="car-card-detailed" style="border-left: 6px solid #38BDF8 !important;">
-                <div style="font-size:12px; font-weight:900; color:#38BDF8;">SEÇTİĞİNİZ ARAÇ ÖZETİ</div>
-                <div style="font-size:26px; font-weight:900; margin:4px 0;">{s['ad']}</div>
-                <div style="font-size:14px; color:#94A3B8; font-weight:700;">📍 {s['konum']} | ⏱ {s['gun']} Gün Kiralama</div>
-                <div class="price-row-box" style="margin-top:14px;">
-                    <div style="font-size:14px; font-weight:800;">Toplam Ödenecek Tutar:</div>
-                    <div style="font-size:24px; font-weight:900; color:#FF6B00;">{s['toplam']:,} ₺</div>
-                </div>
-            </div>
-            """
+            summary_html = (
+                f'<div class="car-card-detailed" style="border-left: 6px solid #38BDF8 !important;">'
+                f'<div style="font-size:12px; font-weight:900; color:#38BDF8;">SEÇTİĞİNİZ ARAÇ ÖZETİ</div>'
+                f'<div style="font-size:26px; font-weight:900; margin:4px 0;">{s["ad"]}</div>'
+                f'<div style="font-size:14px; color:#94A3B8; font-weight:700;">📍 {s["konum"]} | ⏱ {s["gun"]} Gün Kiralama</div>'
+                f'<div class="price-row-box" style="margin-top:14px;">'
+                f'<div style="font-size:14px; font-weight:800;">Toplam Ödenecek Tutar:</div>'
+                f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{s["toplam"]:,} ₺</div>'
+                f'</div>'
+                f'</div>'
+            )
             st.markdown(summary_html, unsafe_allow_html=True)
 
             with st.form("kiralama_onay_formu"):
@@ -652,12 +638,10 @@ else:
                     if u_tc in satir or u_ad in satir:
                         bulundu = True
                         st.markdown(
-                            f"""
-                            <div class="car-card-detailed" style="border-left: 6px solid #10B981 !important; padding: 16px !important;">
-                                <div style="font-size: 12px; color: #34D399; font-weight: 900;">✓ KAYIT AKTİF</div>
-                                <div style="font-size: 14px; font-weight: 700; margin-top: 6px;">{satir.strip()}</div>
-                            </div>
-                            """,
+                            f'<div class="car-card-detailed" style="border-left: 6px solid #10B981 !important; padding: 16px !important;">'
+                            f'<div style="font-size: 12px; color: #34D399; font-weight: 900;">✓ KAYIT AKTİF</div>'
+                            f'<div style="font-size: 14px; font-weight: 700; margin-top: 6px;">{satir.strip()}</div>'
+                            f'</div>',
                             unsafe_allow_html=True,
                         )
 
@@ -668,26 +652,26 @@ else:
         u = st.session_state["user"]
 
         # VIP SÜRÜCÜ KARTI
-        driver_card_html = f"""
-        <div class="vip-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <span class="vip-tag" style="font-size:12px; font-weight:900; letter-spacing:2px;">DRIVENOW VIP MEMBER</span>
-                <span style="font-size:20px;">💎</span>
-            </div>
-            <div class="vip-subtext" style="font-size:11px;">SÜRÜCÜ AD SOYAD</div>
-            <div style="font-size:24px; font-weight:900; text-transform:uppercase; margin-bottom:16px;">{u['ad']}</div>
-            <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.06); padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
-                <div>
-                    <div class="vip-subtext" style="font-size:10px;">TC NO</div>
-                    <div style="font-size:14px; font-weight:800;">{u['tc']}</div>
-                </div>
-                <div>
-                    <div class="vip-subtext" style="font-size:10px;">TELEFON</div>
-                    <div style="font-size:14px; font-weight:800;">+90 {u['tel']}</div>
-                </div>
-            </div>
-        </div>
-        """
+        driver_card_html = (
+            f'<div class="vip-card">'
+            f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">'
+            f'<span class="vip-tag" style="font-size:12px; font-weight:900; letter-spacing:2px;">DRIVENOW VIP MEMBER</span>'
+            f'<span style="font-size:20px;">💎</span>'
+            f'</div>'
+            f'<div class="vip-subtext" style="font-size:11px;">SÜRÜCÜ AD SOYAD</div>'
+            f'<div style="font-size:24px; font-weight:900; text-transform:uppercase; margin-bottom:16px;">{u["ad"]}</div>'
+            f'<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.06); padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">'
+            f'<div>'
+            f'<div class="vip-subtext" style="font-size:10px;">TC NO</div>'
+            f'<div style="font-size:14px; font-weight:800;">{u["tc"]}</div>'
+            f'</div>'
+            f'<div>'
+            f'<div class="vip-subtext" style="font-size:10px;">TELEFON</div>'
+            f'<div style="font-size:14px; font-weight:800;">+90 {u["tel"]}</div>'
+            f'</div>'
+            f'</div>'
+            f'</div>'
+        )
         st.markdown(driver_card_html, unsafe_allow_html=True)
 
         # 🔒 YÖNETİCİ PANELİ

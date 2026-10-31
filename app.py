@@ -15,25 +15,21 @@ st.set_page_config(
 # ULTRA MODERN iOS GLASSMORPHISM & GRADIENT CSS
 st.markdown("""
     <style>
-    /* Arka Plan Degradesi */
     .stApp {
         background: linear-gradient(180deg, #E0E7FF 0%, #F1F5F9 35%, #F8FAFC 100%) !important;
         background-attachment: fixed !important;
     }
     
-    /* Gizlenen Sistem Elemanları */
     header {visibility: hidden !important;}
     footer {visibility: hidden !important;}
     #MainMenu {visibility: hidden !important;}
     .stDeployButton {display:none !important;}
 
-    /* Tipografi */
     html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span {
         color: #0F172A !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif !important;
     }
 
-    /* Üst Canlı Hero Başlık */
     .hero-header {
         background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
         padding: 22px 20px !important;
@@ -59,7 +55,6 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
 
-    /* Cam Efektli Arama Paneli */
     .search-glass {
         background: rgba(255, 255, 255, 0.85) !important;
         backdrop-filter: blur(12px) !important;
@@ -70,7 +65,6 @@ st.markdown("""
         margin-bottom: 20px !important;
     }
 
-    /* Lüks Şık Araç Kartı */
     .car-card-modern {
         background-color: #FFFFFF !important;
         padding: 18px !important;
@@ -80,7 +74,6 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* BİREBİR ORİJİNAL ARAÇ FOTOĞRAFI STİLİ */
     .car-photo {
         width: 100% !important;
         height: 190px !important;
@@ -150,7 +143,6 @@ st.markdown("""
         align-items: center !important;
     }
 
-    /* Canlı Turuncu Buton */
     div.stButton > button {
         width: 100% !important;
         background: linear-gradient(135deg, #FF6B00 0%, #FF5F00 100%) !important;
@@ -164,7 +156,6 @@ st.markdown("""
         margin-bottom: 16px !important;
     }
 
-    /* Form Giriş Butonu */
     div.stFormSubmitButton > button {
         width: 100% !important;
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
@@ -177,7 +168,6 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35) !important;
     }
 
-    /* Input Kutu Düzenlemeleri */
     .stTextInput>div>div>input, .stNumberInput>div>div>input, div[data-baseweb="select"]>div {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
@@ -195,67 +185,23 @@ st.markdown("""
 
 DATA_FILE = "rezervasyonlar.csv"
 
+# Veritabanı ve Konum Sütunu Kontrolü
 if not os.path.exists(DATA_FILE):
-    df = pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Arac", "Gun", "ToplamTutar"])
+    df = pd.DataFrame(columns=["Tarih", "Musteri", "TC", "Telefon", "Konum", "Arac", "Gun", "ToplamTutar"])
     df.to_csv(DATA_FILE, index=False)
+else:
+    # Eski kayıtlar varsa hata vermemesi için Konum sütununu otomatik ekler
+    df = pd.read_csv(DATA_FILE)
+    if 'Konum' not in df.columns:
+        df['Konum'] = "İstanbul • Sabiha Gökçen HL"
+        df.to_csv(DATA_FILE, index=False)
 
-# BİREBİR DOĞRU VE HD OLAN MODEL FOTOĞRAFLARI
 ARACLAR = [
-    {
-        "ad": "Peugeot 508 GT", 
-        "kat": "SEDAN • PREMİUM", 
-        "vites": "Otomatik", 
-        "yakit": "Dizel", 
-        "fiyat": 1500, 
-        "puan": "4.9", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "2 Valiz", 
-        "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/2019_Peugeot_508_GT_Line_PureTech_1.6_Front.jpg/800px-2019_Peugeot_508_GT_Line_PureTech_1.6_Front.jpg"
-    },
-    {
-        "ad": "Renault Clio", 
-        "kat": "HATCHBACK • EKONOMİK", 
-        "vites": "Manuel", 
-        "yakit": "Benzin", 
-        "fiyat": 900, 
-        "puan": "4.7", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "1 Valiz", 
-        "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/2019_Renault_Clio_Iconic_TCe_90_1.0_Front.jpg/800px-2019_Renault_Clio_Iconic_TCe_90_1.0_Front.jpg"
-    },
-    {
-        "ad": "Ford Focus", 
-        "kat": "COMPACT • KONFOR", 
-        "vites": "Otomatik", 
-        "yakit": "Benzin", 
-        "fiyat": 1200, 
-        "puan": "4.8", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "2 Valiz", 
-        "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/2019_Ford_Focus_ST-Line_X_1.5_Front.jpg/800px-2019_Ford_Focus_ST-Line_X_1.5_Front.jpg"
-    },
-    {
-        "ad": "Fiat Egea Cross", 
-        "kat": "CROSSOVER • EKONOMİK", 
-        "vites": "Manuel", 
-        "yakit": "Dizel", 
-        "fiyat": 850, 
-        "puan": "4.6", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "2 Valiz", 
-        "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/2021_Fiat_Tipo_Cross_1.0_Front.jpg/800px-2021_Fiat_Tipo_Cross_1.0_Front.jpg"
-    },
-    {
-        "ad": "Tesla Model 3", 
-        "kat": "LÜKS • %100 ELEKTRİK", 
-        "vites": "Otomatik", 
-        "yakit": "Elektrik", 
-        "fiyat": 2500, 
-        "puan": "5.0", 
-        "koltuk": "5 Koltuk", 
-        "bagaj": "3 Valiz", 
-        "resim": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&auto=format&fit=crop"
-    }
+    {"ad": "Peugeot 508 GT", "kat": "SEDAN • PREMİUM", "vites": "Otomatik", "yakit": "Dizel", "fiyat": 1500, "puan": "4.9", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/2019_Peugeot_508_GT_Line_PureTech_1.6_Front.jpg/800px-2019_Peugeot_508_GT_Line_PureTech_1.6_Front.jpg"},
+    {"ad": "Renault Clio", "kat": "HATCHBACK • EKONOMİK", "vites": "Manuel", "yakit": "Benzin", "fiyat": 900, "puan": "4.7", "koltuk": "5 Koltuk", "bagaj": "1 Valiz", "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/2019_Renault_Clio_Iconic_TCe_90_1.0_Front.jpg/800px-2019_Renault_Clio_Iconic_TCe_90_1.0_Front.jpg"},
+    {"ad": "Ford Focus", "kat": "COMPACT • KONFOR", "vites": "Otomatik", "yakit": "Benzin", "fiyat": 1200, "puan": "4.8", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/2019_Ford_Focus_ST-Line_X_1.5_Front.jpg/800px-2019_Ford_Focus_ST-Line_X_1.5_Front.jpg"},
+    {"ad": "Fiat Egea Cross", "kat": "CROSSOVER • EKONOMİK", "vites": "Manuel", "yakit": "Dizel", "fiyat": 850, "puan": "4.6", "koltuk": "5 Koltuk", "bagaj": "2 Valiz", "resim": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/2021_Fiat_Tipo_Cross_1.0_Front.jpg/800px-2021_Fiat_Tipo_Cross_1.0_Front.jpg"},
+    {"ad": "Tesla Model 3", "kat": "LÜKS • %100 ELEKTRİK", "vites": "Otomatik", "yakit": "Elektrik", "fiyat": 2500, "puan": "5.0", "koltuk": "5 Koltuk", "bagaj": "3 Valiz", "resim": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&auto=format&fit=crop"}
 ]
 
 if 'kullanici' not in st.session_state:
@@ -265,7 +211,7 @@ if 'kullanici' not in st.session_state:
 if st.session_state['kullanici'] is None:
     st.markdown("""
         <div class="hero-header" style="text-align: center;">
-            <div class="status-badge">📍 İstanbul • Sabiha Gökçen</div>
+            <div class="status-badge">📍 Türkiye Geneli 7/24 Hizmet</div>
             <h1 style="font-size: 32px; font-weight: 900; margin: 4px 0;">DriveNow</h1>
             <p style="font-size: 14px; opacity: 0.8;">Lüks & Ekonomik Araç Kiralama</p>
         </div>
@@ -301,14 +247,25 @@ else:
     # ---------- TAB 1: ARAÇ KİRALAMA EKRANI ----------
     with tab1:
         st.markdown('<div class="search-glass">', unsafe_allow_html=True)
+        
+        # YENİ EKLENEN: KONUM SEÇİCİ
+        secilen_konum = st.selectbox("📍 Alış ve Teslim Noktası", [
+            "İstanbul • Sabiha Gökçen HL",
+            "İstanbul • İstanbul Havalimanı",
+            "Ankara • Esenboğa HL",
+            "İzmir • Adnan Menderes HL",
+            "Antalya • Havalimanı",
+            "Muğla • Dalaman HL",
+            "Bursa • Şehir Merkezi"
+        ])
+        
         c1, c2 = st.columns(2)
         with c1:
-            vites_filtre = st.selectbox("Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
+            vites_filtre = st.selectbox("🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
         with c2:
-            gun = st.number_input("Süre (Gün)", min_value=1, max_value=30, value=1)
+            gun = st.number_input("⏱ Süre (Gün)", min_value=1, max_value=30, value=1)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Araç Kartları Listesi (Doğru Fotoğraflı)
         for arac in ARACLAR:
             if vites_filtre != "Tümü" and arac["vites"] != vites_filtre:
                 continue
@@ -352,13 +309,14 @@ else:
                     "Musteri": st.session_state['kullanici']['ad'],
                     "TC": st.session_state['kullanici']['tc'],
                     "Telefon": st.session_state['kullanici']['tel'],
+                    "Konum": secilen_konum, # KONUM BİLGİSİ VERİTABANINA YAZILIYOR
                     "Arac": arac['ad'],
                     "Gun": gun,
                     "ToplamTutar": toplam_fiyat
                 }])
                 yeni_kayit.to_csv(DATA_FILE, mode='a', header=False, index=False)
                 st.balloons()
-                st.success(f"🎉 Rezervasyon Başarılı! {arac['ad']} - {toplam_fiyat:,} ₺")
+                st.success(f"🎉 Rezervasyon Başarılı! {arac['ad']} ({secilen_konum}) - {toplam_fiyat:,} ₺")
 
     # ---------- TAB 2: GEÇMİŞ KİRALAMALAR ----------
     with tab2:
@@ -368,11 +326,14 @@ else:
             user_df = df[df['TC'].astype(str) == str(st.session_state['kullanici']['tc'])]
             if not user_df.empty:
                 for idx, row in user_df.iterrows():
+                    # Eski kayıtlarda konum yoksa hata vermemesi için güvenlik önlemi
+                    konum_yazisi = row['Konum'] if 'Konum' in df.columns else "İstanbul • Sabiha Gökçen HL"
+                    
                     rec_html = f"""
                     <div class="car-card-modern" style="border-left: 6px solid #2563EB !important;">
                         <div style="font-size: 11px; color: #2563EB; font-weight: 800;">REZERVASYON ONAYLANDI</div>
                         <div style="font-size: 18px; font-weight: 900; color: #0F172A; margin: 4px 0;">🚗 {row['Arac']}</div>
-                        <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">📅 Tarih: {row['Tarih']}</div>
+                        <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">📍 {konum_yazisi} &nbsp;|&nbsp; 📅 {row['Tarih']}</div>
                         <div style="font-size: 14px; font-weight: 800; color: #0F172A;">
                             ⏱ {row['Gun']} Günlük | 💰 Toplam: {row['ToplamTutar']:,} ₺
                         </div>

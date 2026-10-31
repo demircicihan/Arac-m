@@ -56,7 +56,7 @@ ARACLAR = [
         "puan": "4.8",
         "koltuk": "5 Koltuk",
         "bagaj": "2 Valiz",
-        "badge": "🌟 AİLE DİŞİ",
+        "badge": "🌟 AİLE DOSTU",
     },
     {
         "ad": "Renault Clio",
@@ -538,7 +538,7 @@ else:
                             "Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin."
                         )
 
-            if st.button("⬅️ Başka Araç Seç":
+            if st.button("⬅️ Başka Araç Seç"):
                 st.session_state["secili"] = None
                 st.rerun()
 

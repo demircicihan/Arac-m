@@ -36,7 +36,7 @@ VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR = ADMIN_SIFRE_HAM is None
 ADMIN_SIFRE = ADMIN_SIFRE_HAM or "cihan123"         # secrets yoksa geçici varsayılan
 
 GMAIL_ADRES = _secret("demircicihan788@gmail.com", "")             # E-posta gönderecek şirket hesabı
-GMAIL_SIFRE = _secret("mjleglfzrcrxnmqb", "",)             # Google Uygulama Şifresi (16 Haneli)
+GMAIL_SIFRE = _secret("mjleglfzrcrxnmqb", "")             # Google Uygulama Şifresi (16 Haneli)
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
@@ -845,23 +845,24 @@ else:
 
                 if konum in LOKASYONLAR:
                     enlem, boylam = LOKASYONLAR[konum]
-                    df_map = pd.DataFrame([{"lat": enlem, "lon": boylam}])
+                    df_map = pd.DataFrame([{"lat": enlem, "lon": boylam, "name": konum}])
                     harita = pdk.Deck(
                         map_style="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
-                        initial_view_state=pdk.ViewState(latitude=enlem, longitude=boylam, zoom=12, pitch=0),
+                        initial_view_state=pdk.ViewState(latitude=enlem, longitude=boylam, zoom=10, pitch=0),
                         layers=[
                             pdk.Layer(
                                 "ScatterplotLayer",
                                 data=df_map,
                                 get_position="[lon, lat]",
-                                get_radius=250,
-                                get_fill_color=[255, 107, 0, 200],
+                                get_radius=1500,
+                                get_fill_color=[255, 107, 0, 240],
                                 get_line_color=[255, 255, 255],
-                                line_width_min_pixels=2,
-                                pickable=False,
+                                line_width_min_pixels=3,
+                                pickable=True,
+                                stroked=True,
                             )
                         ],
-                        tooltip=False,
+                        tooltip={"text": "Seçilen Konum: {name}"},
                     )
                     st.pydeck_chart(harita, width="stretch")
                     st.caption(f"📍 Haritada seçili nokta: {konum}")

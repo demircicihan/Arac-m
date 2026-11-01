@@ -10,7 +10,6 @@ from email.message import EmailMessage
 import streamlit as st
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-import pywhatkit as kit
 
 # --- SAYFA AYARLARI ---
 st.set_page_config(
@@ -906,7 +905,7 @@ else:
             if sifre == ADMIN_SIFRE:
                 st.success("Yetkili Girişi Onaylandı.")
 
-                # 📲 YÖNETİCİ KONTROLLÜ WHATSAPP ONAY MERKEZİ
+                # 📲 YÖNETİCİ KONTROLLÜ WHATSAPP ONAY MERKEZİ (Güvenli Web Bağlantısı ile)
                 st.markdown("<b>📱 Admin WhatsApp Onay Merkezi</b>", unsafe_allow_html=True)
                 bekleyen_rez = pd.read_sql_query("SELECT id, ad, tel, arac, bas_tarih, bit_tarih, toplam_tutar FROM kiralamalar WHERE durum='Aktif'", conn)
                 
@@ -920,16 +919,20 @@ else:
                         r_id = secilen_rez.split(" - ")[0].replace("ID:", "")
                         secilen_kayit = bekleyen_rez[bekleyen_rez['id'] == int(r_id)].iloc[0]
                         
-                        if st.button("💬 Bu Müşteriye WhatsApp Onayı Gönder (Admin)"):
-                            try:
-                                musteri_tel = f"+90{secilen_kayit['tel']}"
-                                wa_mesaj = tr_duzelt(f"Sayin {secilen_kayit['ad']}, DriveNow uzerinden {secilen_kayit['arac']} araci icin yaptiginiz rezervasyon onaylanmistir. Tarihler: {secilen_kayit['bas_tarih']} / {secilen_kayit['bit_tarih']}. Tutar: {secilen_kayit['toplam_tutar']:,.0f} TL. Iyi yolculuklar dileriz!")
-                                
-                                simdi = datetime.now()
-                                kit.sendwhatmsg(musteri_tel, wa_mesaj, simdi.hour, simdi.minute + 1, 15, True, 2)
-                                st.success(f"Başarılı! {secilen_kayit['ad']} adlı müşterinin telefonuna WhatsApp onay mesajı kuyruğa eklendi.")
-                            except Exception as e:
-                                st.error("WhatsApp mesajı tetiklenirken hata oluştu. Bilgisayarınızda WhatsApp Web'in açık olduğundan emin olun.")
+                        musteri_tel = f"90{secilen_kayit['tel']}"
+                        wa_mesaj = tr_duzelt(f"Sayin {secilen_kayit['ad']}, DriveNow uzerinden {secilen_kayit['arac']} araci icin yaptiginiz rezervasyon onaylanmistir. Tarihler: {secilen_kayit['bas_tarih']} / {secilen_kayit['bit_tarih']}. Tutar: {secilen_kayit['toplam_tutar']:,.0f} TL. Iyi yolculuklar dileriz!")
+                        wa_link = f"https://wa.me/{musteri_tel}?text={re.sub(' ', '%20', wa_mesaj)}"
+                        
+                        st.markdown(
+                            f'''
+                            <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                                <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; text-align: center; font-size: 16px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
+                                    💬 Müşteriye WhatsApp Onay Linkini Aç ({secilen_kayit['ad']})
+                                </div>
+                            </a>
+                            ''', 
+                            unsafe_allow_html=True
+                        )
                 else:
                     st.info("Onay bekleyen aktif kiralama bulunmuyor.")
 

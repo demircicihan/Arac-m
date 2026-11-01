@@ -21,8 +21,8 @@ st.set_page_config(
 
 # --- SECRETS MANAGEMENT & AYARLAR ---
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
-GMAIL_ADRES = "demircicihan788@gmail.com"  # E-posta gönderecek şirket hesabı
-GMAIL_SIFRE = "mjleglfzrcrxnmqb"       # Gmail Uygulama Şifresi (App Password)
+GMAIL_ADRES = "sirket_epostaniz@gmail.com"  # E-posta gönderecek şirket hesabı
+GMAIL_SIFRE = "uygulama_sifresi_buraya"       # Google Uygulama Şifresi (16 Haneli)
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
@@ -621,10 +621,11 @@ else:
             with c_vites:
                 vites_filtre = st.selectbox("🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
 
-            # Harita Entegrasyonu
-            if konum in LOKASYONLAR:
-                df_map = pd.DataFrame([{"lat": LOKASYONLAR[konum][0], "lon": LOKASYONLAR[konum][1]}])
-                st.map(df_map, zoom=12, use_container_width=True)
+            # 🗺️ HARİTA ENTEGRASYONU (Tüm Teslimat Noktalarını Gösterir)
+            if LOKASYONLAR:
+                map_data = [{"lat": coords[0], "lon": coords[1]} for coords in LOKASYONLAR.values()]
+                df_map = pd.DataFrame(map_data)
+                st.map(df_map, zoom=6, use_container_width=True)
 
             # 📅 TARİH ARALIĞI SEÇİMİ
             c_t1, c_t2 = st.columns(2)
@@ -807,7 +808,7 @@ else:
                                 f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tutar: {genel_toplam:,.0f} ₺ | Foto: {foto_ad}",
                             )
 
-                            # SQLite Veritabanına Kaydet (Müsaitlik kilidi için kritik)
+                            # SQLite Veritabanına Kaydet
                             c.execute('''INSERT INTO kiralamalar 
                                          (tc, ad, tel, email, arac, konum, bas_tarih, bit_tarih, gun, toplam_tutar, durum, olusturma_tarihi) 
                                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
@@ -905,7 +906,7 @@ else:
             if sifre == ADMIN_SIFRE:
                 st.success("Yetkili Girişi Onaylandı.")
 
-                # 📲 YÖNETİCİ KONTROLLÜ WHATSAPP ONAY MERKEZİ (Güvenli Web Bağlantısı ile)
+                # 📲 YÖNETİCİ KONTROLLÜ WHATSAPP ONAY MERKEZİ
                 st.markdown("<b>📱 Admin WhatsApp Onay Merkezi</b>", unsafe_allow_html=True)
                 bekleyen_rez = pd.read_sql_query("SELECT id, ad, tel, arac, bas_tarih, bit_tarih, toplam_tutar FROM kiralamalar WHERE durum='Aktif'", conn)
                 

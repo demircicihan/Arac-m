@@ -207,7 +207,7 @@ ARACLAR = [
     },
 ]
 
-# --- MODERN CSS TASARIMI (YAZI ÇAKIŞMALARI DÜZELTİLDİ) ---
+# --- MODERN CSS TASARIMI (YAZI VE IKON ÇAKIŞMA DÜZELTMESİ EKLENDİ) ---
 st.markdown(
     """
     <style>
@@ -219,7 +219,7 @@ st.markdown(
     header {visibility: hidden !important;}
     footer {visibility: hidden !important;}
 
-    html, body, [class*="css"], label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, strong {
+    html, body, label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, strong {
         color: #F8FAFC !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", Roboto, sans-serif !important;
     }
@@ -345,18 +345,26 @@ st.markdown(
         cursor: pointer !important;
     }
 
-    /* EXPANDER BAŞLIK DÜZELTMESİ (ÇAKIŞMAYI ÖNLER) */
+    /* 🔥 BOZUK IKON YAZISINI GİZLEYEN STİL KODU */
     div[data-testid="stExpander"] {
         background: rgba(15, 23, 42, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 14px !important;
         margin-bottom: 15px !important;
     }
-    
-    div[data-testid="stExpander"] summary {
-        padding: 12px 16px !important;
+
+    div[data-testid="stExpander"] summary span[data-testid="stIconMaterial"] {
+        display: none !important;
+    }
+
+    div[data-testid="stExpander"] summary svg {
+        display: none !important;
+    }
+
+    div[data-testid="stExpander"] summary p {
         font-weight: 700 !important;
-        color: #F8FAFC !important;
+        font-size: 14px !important;
+        color: #38BDF8 !important;
     }
 
     [data-testid="stDownloadButton"] > button {
@@ -524,7 +532,7 @@ else:
 
     with t1:
         if st.session_state["secili"] is None:
-            # 🔍 ARAMA & FİLTRELEME PANELİ
+            # 🔍 ARAMA & FİLTRELEME PANELİ (GENİŞLETİLMİŞ TESLİMAT NOKTALARI)
             st.markdown('<div class="search-card">', unsafe_allow_html=True)
             st.markdown(
                 f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>",
@@ -536,16 +544,46 @@ else:
                 konum = st.selectbox(
                     "📍 Teslimat Noktası",
                     [
-                        "Konya • Ereğli Merkez / KYK",
+                        # Yerel Teslimat Noktaları
+                        "Konya • Ereğli Merkez / KYK Yurdu",
+                        "Konya • Ereğli Otogar & Tren Garı",
                         "Konya • Çumra İlçe Merkezi",
                         "Konya • Selçuklu / Otogar",
+                        "Konya • Zafer / Alaaddin Merkez",
+                        "Konya • Meram Yaka",
                         "Konya • Havalimanı (KYA)",
-                        "İstanbul • Sabiha Gökçen HL",
-                        "İstanbul • İstanbul Havalimanı",
-                        "Ankara • Esenboğa HL",
-                        "İzmir • Adnan Menderes HL",
-                        "Antalya • Havalimanı",
-                        "Bursa • Şehir Merkezi",
+                        
+                        # Marmara Bölgesi
+                        "İstanbul • Sabiha Gökçen Havalimanı (SAW)",
+                        "İstanbul • İstanbul Havalimanı (IST)",
+                        "İstanbul • Kadıköy VIP Şube",
+                        "İstanbul • Maslak VIP Şube",
+                        "Bursa • Şehir Merkezi / Nilüfer",
+                        "Kocaeli • İzmit Şehir Merkezi",
+                        
+                        # İç Anadolu Bölgesi
+                        "Ankara • Esenboğa Havalimanı (ESB)",
+                        "Ankara • YHT Gar / AŞTİ Otogar",
+                        "Ankara • Çankaya VIP Şube",
+                        "Kayseri • Erkilet Havalimanı (ASR)",
+                        "Eskişehir • Odunpazarı Şehir Merkezi",
+                        
+                        # Ege Bölgesi
+                        "İzmir • Adnan Menderes Havalimanı (ADB)",
+                        "İzmir • Alsancak Şehir Merkezi",
+                        "Muğla • Bodrum-Milas Havalimanı (BJV)",
+                        "Muğla • Dalaman Havalimanı (DLM)",
+                        
+                        # Akdeniz Bölgesi
+                        "Antalya • Havalimanı (AYT) Dış/İç Hatlar",
+                        "Antalya • Alanya Şehir Merkezi",
+                        "Adana • Şakirpaşa Havalimanı (ADA)",
+                        "Mersin • Şehir Merkezi / Marina",
+                        
+                        # Karadeniz & Doğu Bölgeleri
+                        "Trabzon • Havalimanı (TZX)",
+                        "Samsun • Çarşamba Havalimanı (SZF)",
+                        "Gaziantep • Oğuzeli Havalimanı (GZT)"
                     ],
                 )
             with c_vites:
@@ -600,8 +638,8 @@ else:
                 )
                 st.markdown(card_html, unsafe_allow_html=True)
 
-                # 🔍 DETAY EXPANDER (SADELEŞTİRİLMİŞ BAŞLIK - ÇAKIŞMA TAMAMEN DÜZELTİLDİ)
-                with st.expander("Teknik Özellikler ve Donanımlar"):
+                # 🔍 DETAY EXPANDER
+                with st.expander("🔻 Teknik Özellikler ve Donanımları Gör"):
                     st.markdown(
                         f"""
                         <div class="tech-grid">

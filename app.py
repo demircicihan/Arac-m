@@ -18,6 +18,8 @@ st.set_page_config(
 
 # --- SECRETS MANAGEMENT ---
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
+# WhatsApp mesajlarının gönderileceği yetkili/işletme numarası (Ülke kodu ile, başında + olmadan)
+YONETICI_WA_TEL = "905000000000" 
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
@@ -705,7 +707,7 @@ else:
                 unsafe_allow_html=True
             )
 
-            # FORMU ÇALIŞTIRMA VE VERİ ALMA (HATA ENGELLEME DÜZENLEMESİ)
+            # FORMU ÇALIŞTIRMA VE VERİ ALMA
             if not st.session_state["tamamlandi"]:
                 with st.form("kiralama_onay_formu"):
                     c_e1, c_e2 = st.columns(2)
@@ -732,7 +734,6 @@ else:
                                 f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tarih: {s['bas_tarih'].strftime('%d.%m.%Y')}-{s['bit_tarih'].strftime('%d.%m.%Y')} | Tutar: {genel_toplam} ₺ | Ekler: {', '.join(secilen_ekler)} | Foto: {foto_ad}",
                             )
 
-                            # İşlem bilgilerini oturuma kaydet (Form dışına aktarma)
                             st.session_state["tamamlandi"] = True
                             st.session_state["son_rezervasyon"] = {
                                 "toplam": genel_toplam,
@@ -742,19 +743,31 @@ else:
                         else:
                             st.error("Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin.")
 
-            # REZERVASYON TAMAMLANDIKTAN SONRA FORM DIŞINDA GÖSTERİLEN BÖLÜM (HATA VERMEZ)
+            # REZERVASYON TAMAMLANDIKTAN SONRA FORM DIŞINDA GÖSTERİLEN BÖLÜM
             if st.session_state["tamamlandi"]:
                 st.balloons()
                 st.success(f"🎉 Tebrikler Sayın {u['ad']}! Rezervasyonunuz başarıyla oluşturuldu.")
 
                 res_info = st.session_state["son_rezervasyon"]
 
-                # 📲 WHATSAPP BİLDİRİM LİNKİ
-                wa_mesaj = f"Merhaba, ben {u['ad']}. {s['ad']} aracını {s['bas_tarih'].strftime('%d.%m.%Y')} tarihi için rezerve ettim. Toplam Tutar: {res_info['toplam']} TL."
-                wa_link = f"https://wa.me/905000000000?text={re.sub(' ', '%20', wa_mesaj)}"
-                st.markdown(f'<a href="{wa_link}" target="_blank" style="display:inline-block; background:#25D366; color:white; padding:12px 20px; border-radius:12px; font-weight:bold; text-decoration:none; margin-bottom:15px;">📲 WhatsApp İle Onay Bildirimi Gönder</a>', unsafe_allow_html=True)
+                # 📲 PC'DE AÇIK OLAN WHATSAPP NUMARASINDAN BİLDİRİM GÖNDERME
+                wa_mesaj = f"Merhaba, ben {u['ad']} ({u['tel']}). {s['ad']} aracını {s['bas_tarih'].strftime('%d.%m.%Y')} - {s['bit_tarih'].strftime('%d.%m.%Y')} tarihleri arasında {s['konum']} teslimatlı rezerve ettim. Toplam Tutar: {res_info['toplam']} TL."
+                
+                # wa.me link yapısı: Cihazdaki varsayılan WhatsApp/WhatsApp Web uygulamasını açar
+                wa_link = f"https://wa.me/{YONETICI_WA_TEL}?text={re.sub(' ', '%20', wa_mesaj)}"
+                
+                st.markdown(
+                    f'''
+                    <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                        <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; text-align: center; font-size: 16px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
+                            💬 WhatsApp İle Rezervasyon Detaylarını Gönder (Açık Hesaptan)
+                        </div>
+                    </a>
+                    ''', 
+                    unsafe_allow_html=True
+                )
 
-                # 📄 PDF FATURA İNDİRME BUTONU (FORM DIŞINDA SAF STREAMLIT BİLEŞENİ)
+                # 📄 PDF FATURA İNDİRME
                 pdf_file = pdf_fatura_olustur(u['ad'], u['tc'], u['tel'], s['ad'], s['konum'], s['bas_tarih'], s['bit_tarih'], s['gun'], res_info['toplam'], res_info['ekler'])
                 st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
 

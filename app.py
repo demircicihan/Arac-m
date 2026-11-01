@@ -38,8 +38,8 @@ ADMIN_SIFRE_HAM = _secret("ADMIN_SIFRE", None)
 VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR = ADMIN_SIFRE_HAM is None
 ADMIN_SIFRE = ADMIN_SIFRE_HAM or "cihan123"          # secrets yoksa geçici varsayılan
 
-GMAIL_ADRES = _secret("GMAIL_ADRES", "")             # E-posta gönderecek şirket hesabı
-GMAIL_SIFRE = _secret("GMAIL_SIFRE", "")             # Google Uygulama Şifresi (16 Haneli)
+GMAIL_ADRES = _secret("demircicihan788@gmail.com", "")             # E-posta gönderecek şirket hesabı
+GMAIL_SIFRE = _secret("mjleglfzrcrxnmqb", "")             # Google Uygulama Şifresi (16 Haneli)
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"

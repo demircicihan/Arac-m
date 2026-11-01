@@ -24,8 +24,6 @@ st.set_page_config(
 )
 
 # --- SECRETS MANAGEMENT & AYARLAR ---
-# Tüm gizli bilgiler .streamlit/secrets.toml dosyasından okunur.
-# Örnek dosya: .streamlit/secrets.toml.example
 def _secret(anahtar, varsayilan=""):
     """st.secrets'tan değer okur; secrets dosyası yoksa varsayılanı döndürür."""
     try:
@@ -33,13 +31,12 @@ def _secret(anahtar, varsayilan=""):
     except Exception:
         return varsayilan
 
-
 ADMIN_SIFRE_HAM = _secret("cihan123", None)
 VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR = ADMIN_SIFRE_HAM is None
-ADMIN_SIFRE = ADMIN_SIFRE_HAM or "cihan123"          # secrets yoksa geçici varsayılan
+ADMIN_SIFRE = ADMIN_SIFRE_HAM or "cihan123"         # secrets yoksa geçici varsayılan
 
 GMAIL_ADRES = _secret("demircicihan788@gmail.com", "")             # E-posta gönderecek şirket hesabı
-GMAIL_SIFRE = _secret("mjleglfzrcrxnmqb", "")             # Google Uygulama Şifresi (16 Haneli)
+GMAIL_SIFRE = _secret("mjleglfzrcrxnmqb", "",)             # Google Uygulama Şifresi (16 Haneli)
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
@@ -56,19 +53,16 @@ def db_baglan():
     """Her işlem için taze bir SQLite bağlantısı açar (tek global bağlantı yok)."""
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
-
 def db_oku(sorgu, parametreler=None):
     """SELECT sorgusu çalıştırıp DataFrame döndürür (parametreli, enjeksiyona kapalı)."""
     with closing(db_baglan()) as conn:
         return pd.read_sql_query(sorgu, conn, params=parametreler)
-
 
 def db_calistir(sorgu, parametreler=()):
     """INSERT/UPDATE/DELETE çalıştırır, commit eder ve lastrowid döndürür."""
     with closing(db_baglan()) as conn, conn:
         cur = conn.execute(sorgu, parametreler)
         return cur.lastrowid
-
 
 def init_db():
     with closing(db_baglan()) as conn, conn:
@@ -79,7 +73,6 @@ def init_db():
         conn.execute('''CREATE TABLE IF NOT EXISTS iadeler 
                      (id INTEGER PRIMARY KEY AUTOINCREMENT, kiralama_id INTEGER, 
                      km INTEGER, hasar_durumu TEXT, notlar TEXT, foto_yolu TEXT)''')
-
 
 init_db()
 
@@ -113,9 +106,9 @@ def araba_musait_mi(arac_ad, bas_tarih, bit_tarih):
         satirlar = conn.execute('''SELECT id FROM kiralamalar 
                                    WHERE arac = ? AND durum = 'Aktif' 
                                    AND (? <= bit_tarih AND ? >= bas_tarih)''',
-                                (arac_ad,
-                                 bas_tarih.strftime("%Y-%m-%d"),
-                                 bit_tarih.strftime("%Y-%m-%d"))).fetchall()
+                                 (arac_ad,
+                                  bas_tarih.strftime("%Y-%m-%d"),
+                                  bit_tarih.strftime("%Y-%m-%d"))).fetchall()
     return len(satirlar) == 0
 
 # --- PDF FATURA OLUŞTURMA FONKSİYONU ---
@@ -388,7 +381,6 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", Roboto, sans-serif !important;
     }
 
-    /* Material ikonlarının fontunu geri ver (yoksa "upload", "expand_more" gibi düz metin çıkar) */
     span[data-testid="stIconMaterial"],
     span.material-symbols-rounded,
     span.material-icons {
@@ -423,7 +415,6 @@ st.markdown(
         transform: translateY(-2px);
     }
 
-    /* Araç görseli: kartın sağ yanında */
     .car-card-row {
         display: flex !important;
         gap: 18px !important;
@@ -591,7 +582,6 @@ st.markdown(
         -webkit-text-fill-color: #F8FAFC !important;
     }
 
-    /* --- TARİH ALANI (Alış / İade Tarihi) --- */
     div[data-testid="stDateInputField"] {
         background-color: rgba(15, 23, 42, 0.8) !important;
         border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
@@ -617,7 +607,6 @@ st.markdown(
         opacity: 1 !important;
     }
 
-    /* Takvim açılır penceresi */
     div[data-testid="stDateInputCalendar"] {
         background-color: #1E293B !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -638,7 +627,6 @@ st.markdown(
         border-radius: 10px !important;
     }
 
-    /* --- SEÇİM KUTULARI (Teslimat Noktası / Vites Tipi) --- */
     div[data-testid="stSelectbox"] [role="group"] {
         background-color: rgba(15, 23, 42, 0.8) !important;
         border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
@@ -655,7 +643,6 @@ st.markdown(
         fill: #93C5FD !important;
     }
 
-    /* --- ÜST BAŞLIK VE ELEMENT ARAÇ ÇUBUĞU --- */
     header[data-testid="stHeader"], div[data-testid="stAppHeader"] {
         background: transparent !important;
     }
@@ -664,7 +651,6 @@ st.markdown(
         border-radius: 8px !important;
     }
 
-    /* --- METİN / SAYI GİRİŞ KUTULARI --- */
     div[data-testid="stTextInputRootElement"],
     div[data-testid="stNumberInputRootElement"] {
         background-color: rgba(15, 23, 42, 0.8) !important;
@@ -672,7 +658,6 @@ st.markdown(
         border-radius: 14px !important;
     }
 
-    /* --- ÇOK SATIRLI METİN (Yorum) --- */
     div[data-testid="stTextAreaRootElement"],
     div[data-testid="stTextAreaRootElement"] textarea {
         background-color: rgba(15, 23, 42, 0.8) !important;
@@ -686,14 +671,12 @@ st.markdown(
         -webkit-text-fill-color: #94A3B8 !important;
     }
 
-    /* --- VERİ TABLOSU --- */
     div[data-testid="stDataFrame"] {
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
         border-radius: 14px !important;
         overflow: hidden !important;
     }
 
-    /* --- DOSYA YÜKLEME ALANI --- */
     section[data-testid="stFileUploaderDropzone"] {
         background-color: rgba(15, 23, 42, 0.6) !important;
         border: 1.5px dashed rgba(147, 197, 253, 0.35) !important;
@@ -802,9 +785,9 @@ def kayitlari_ayristir():
     return "\n".join(girisler), "\n".join(kiralama)
 
 # --- OTURUM YÖNETİMİ ---
-for k in ["auth", "user", "secili", "tamamlandi", "tarihler", "son_rezervasyon"]:
+for k in ["auth", "user", "secili", "tamamlandi", "tarihler", "son_rezervasyon", "fatura_pdf", "eposta_sonuc"]:
     if k not in st.session_state: 
-        st.session_state[k] = None if k in ["secili", "tarihler", "son_rezervasyon"] else (False if k in ["auth", "tamamlandi"] else {})
+        st.session_state[k] = None if k in ["secili", "tarihler", "son_rezervasyon", "fatura_pdf", "eposta_sonuc"] else (False if k in ["auth", "tamamlandi"] else {})
 
 # --- GİRİŞ EKRANI ---
 if not st.session_state["auth"]:
@@ -860,8 +843,6 @@ else:
                 with c_vites:
                     vites_filtre = st.selectbox("🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
 
-                # 🗺️ HARİTA ENTEGRASYONU (Seçilen Teslimat Noktasını Gösterir)
-                # Koyu tema st.map'in altlık haritasını kararttığı için açık stilli pydeck kullanılıyor.
                 if konum in LOKASYONLAR:
                     enlem, boylam = LOKASYONLAR[konum]
                     df_map = pd.DataFrame([{"lat": enlem, "lon": boylam}])
@@ -885,7 +866,6 @@ else:
                     st.pydeck_chart(harita, width="stretch")
                     st.caption(f"📍 Haritada seçili nokta: {konum}")
 
-                # 📅 TARİH ARALIĞI SEÇİMİ
                 c_t1, c_t2 = st.columns(2)
                 with c_t1:
                     bas_tarih = st.date_input("📅 Alış Tarihi", datetime.now() + timedelta(days=1))
@@ -899,12 +879,10 @@ else:
                 else:
                     st.info(f"⏱️ Toplam Kiralama Süresi: **{gun} Gün**")
 
-            # Dinamik İndirim Algoritması (7 gün ve üzeri kiralamalara %15 indirim)
             indirim_orani = 0.85 if gun >= 7 else 1.0
             if gun >= 7: 
                 st.success(f"🎉 {gun} Günlük Uzun Dönem Kiralama: Otomatik %15 İndirim Uygulandı!")
 
-            # 🚗 ARAÇ LİSTESİ VE GERÇEK ZAMANLI MÜSAİTLİK
             musait_sayisi = 0
             filtre_sayisi = 0
             for a in ARACLAR:
@@ -1004,7 +982,6 @@ else:
             st.caption("🖼️ Araç görselleri temsilîdir (kaynak: Wikimedia Commons). Ticari kullanımda kendi filo fotoğraflarınızla değiştirin.")
 
         else:
-            # 🔒 REZERVE, KUPON VE EKSTRA HİZMETLER
             s = st.session_state["secili"]
             u = st.session_state["user"]
 
@@ -1060,7 +1037,6 @@ else:
                 unsafe_allow_html=True
             )
 
-            # FORMU ÇALIŞTIRMA VE VERİ ALMA
             if not st.session_state["tamamlandi"]:
                 with st.form("kiralama_onay_formu"):
                     c_e1, c_e2 = st.columns(2)
@@ -1082,13 +1058,11 @@ else:
                             with open(dosya_yolu, "wb") as f:
                                 f.write(dosya.getbuffer())
 
-                            # TXT Loglama
                             kaydet(
                                 "KİRALAMA",
                                 f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tutar: {genel_toplam:,.0f} ₺ | Foto: {foto_ad}",
                             )
 
-                            # SQLite Veritabanına Kaydet
                             db_calistir('''INSERT INTO kiralamalar 
                                          (tc, ad, tel, email, arac, konum, bas_tarih, bit_tarih, gun, toplam_tutar, durum, olusturma_tarihi) 
                                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
@@ -1105,33 +1079,35 @@ else:
                         else:
                             st.error("Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin.")
 
-            # REZERVASYON TAMAMLANDIKTAN SONRA İŞLEMLER (PDF VE E-POSTA)
             if st.session_state["tamamlandi"]:
                 st.balloons()
                 st.success(f"🎉 Tebrikler Sayın {u['ad']}! Rezervasyonunuz başarıyla oluşturuldu ve sisteme işlendi.")
 
-                res_info = st.session_state["son_rezervasyon"]
+                res_info = st.session_state.get("son_rezervasyon")
 
-                # 📄 PDF FATURA + 📧 E-POSTA (yalnızca bir kez üretilip gönderilir)
-                if "fatura_pdf" not in st.session_state:
-                    st.session_state["fatura_pdf"] = pdf_fatura_olustur(
-                        u['ad'], u['tc'], u['tel'], s['ad'], s['konum'],
-                        s['bas_tarih'], s['bit_tarih'], s['gun'],
-                        res_info['toplam'], res_info['ekler']
-                    )
-                    st.session_state["eposta_sonuc"] = eposta_gonder(
-                        u['email'], st.session_state["fatura_pdf"], u['ad']
-                    )
+                if res_info:
+                    if not st.session_state.get("fatura_pdf"):
+                        st.session_state["fatura_pdf"] = pdf_fatura_olustur(
+                            u['ad'], u['tc'], u['tel'], s['ad'], s['konum'],
+                            s['bas_tarih'], s['bit_tarih'], s['gun'],
+                            res_info['toplam'], res_info['ekler']
+                        )
+                        st.session_state["eposta_sonuc"] = eposta_gonder(
+                            u['email'], st.session_state["fatura_pdf"], u['ad']
+                        )
 
-                pdf_file = st.session_state["fatura_pdf"]
-                eposta_basarili, eposta_hata = st.session_state["eposta_sonuc"]
+                    pdf_file = st.session_state.get("fatura_pdf")
+                    eposta_sonuc = st.session_state.get("eposta_sonuc")
 
-                if eposta_basarili:
-                    st.info(f"📧 Rezervasyon faturanız başarıyla {u['email']} adresine gönderildi.")
-                else:
-                    st.warning(f"⚠️ E-posta gönderilemedi: {eposta_hata}")
+                    if eposta_sonuc:
+                        eposta_basarili, eposta_hata = eposta_sonuc
+                        if eposta_basarili:
+                            st.info(f"📧 Rezervasyon faturanız başarıyla {u['email']} adresine gönderildi.")
+                        else:
+                            st.warning(f"⚠️ E-posta gönderilemedi: {eposta_hata}")
 
-                st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
+                    if pdf_file:
+                        st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
 
             if st.button("⬅️ Başka Araç Seç"):
                 st.session_state["fatura_pdf"] = None
@@ -1145,7 +1121,6 @@ else:
         u_ad = st.session_state["user"]["ad"]
         u_tc = st.session_state["user"]["tc"]
 
-        # SQLite üzerinden geçmiş kayıtları çekme (parametreli sorgu)
         df_gecmis = db_oku(
             "SELECT arac, konum, bas_tarih, bit_tarih, toplam_tutar, durum "
             "FROM kiralamalar WHERE tc = ? ORDER BY bas_tarih DESC",
@@ -1156,7 +1131,6 @@ else:
         else:
             st.info("Henüz sistemde kiralama kaydınız bulunmuyor.")
 
-        # ⭐️ YORUM VE PUANLAMA SEKTÖRÜ
         st.markdown("<br><b>⭐️ Deneyiminizi Değerlendirin & Yorum Yapın</b>", unsafe_allow_html=True)
         with st.form("yorum_formu"):
             sec_arac = st.selectbox("Değerlendirilecek Araç", [a["ad"] for a in ARACLAR])
@@ -1171,7 +1145,6 @@ else:
     with t3:
         u = st.session_state["user"]
 
-        # VIP SÜRÜCÜ KARTI
         driver_card_html = (
             f'<div class="vip-card">'
             f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">'
@@ -1194,7 +1167,6 @@ else:
         )
         st.markdown(driver_card_html, unsafe_allow_html=True)
 
-        # 🔒 YÖNETİCİ PANELİ & GRAFİKLİ ANALİZ
         lock = st.checkbox("🔒 Yönetici Paneli Girişi")
         if lock:
             sifre = st.text_input("Admin Şifresi", type="password")
@@ -1203,7 +1175,6 @@ else:
                 if VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR:
                     st.warning("Varsayılan admin şifresi kullanılıyor. Güvenlik için `ADMIN_SIFRE` değerini `.streamlit/secrets.toml` dosyasına ekleyin.")
 
-                # 📲 YÖNETİCİ KONTROLLÜ WHATSAPP ONAY MERKEZİ
                 st.markdown("<b>📱 Admin WhatsApp Onay Merkezi</b>", unsafe_allow_html=True)
                 bekleyen_rez = db_oku(
                     "SELECT id, ad, tel, arac, bas_tarih, bit_tarih, toplam_tutar "
@@ -1240,7 +1211,6 @@ else:
                 else:
                     st.info("Onay bekleyen aktif kiralama bulunmuyor.")
 
-                # 📊 GRAFİK VE CİRO ANALİZİ
                 st.markdown("<b>📊 Ciro ve Performans Analizi</b>", unsafe_allow_html=True)
                 df_analiz = db_oku("SELECT * FROM kiralamalar")
                 if not df_analiz.empty:
@@ -1254,7 +1224,6 @@ else:
                     fig = px.pie(df_analiz, names='arac', title="Araç Bazlı Kiralama Dağılımı", hole=0.4, template="plotly_dark")
                     st.plotly_chart(fig, width="stretch")
 
-                # 🛠️ ARAÇ İADE (CHECK-OUT) VE HASAR KAYDI
                 st.markdown("<b>🛠️ Araç İade & Hasar Yönetimi</b>", unsafe_allow_html=True)
                 aktifler = db_oku("SELECT id, tc, ad, arac FROM kiralamalar WHERE durum = 'Aktif' ORDER BY id")
                 
@@ -1314,7 +1283,7 @@ else:
                         os.remove(DB_FILE)
                     for f in os.listdir(UPLOAD_DIR):
                         os.remove(os.path.join(UPLOAD_DIR, f))
-                    init_db()          # silinen veritabanını boş şemasıyla yeniden oluştur
+                    init_db()         # silinen veritabanını boş şemasıyla yeniden oluştur
                     st.success("Tüm veriler temizlendi!")
                     st.rerun()
             elif sifre != "":

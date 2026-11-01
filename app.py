@@ -1,12 +1,16 @@
 import os
 import re
 import io
+import sqlite3
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
+import smtplib
+from email.message import EmailMessage
 import streamlit as st
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import pywhatkit as kit
 
 # --- SAYFA AYARLARI ---
 st.set_page_config(
@@ -16,18 +20,51 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- SECRETS MANAGEMENT ---
+# --- SECRETS MANAGEMENT & AYARLAR ---
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
-YONETICI_WA_TEL = "905317653420" 
+GMAIL_ADRES = "sirket_epostaniz@gmail.com"  # E-posta gönderecek şirket hesabı
+GMAIL_SIFRE = "uygulama_sifresi_buraya"       # Gmail Uygulama Şifresi (App Password)
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
 UPLOAD_DIR = "yuklemeler"
+DB_FILE = "drivenow.db"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 if not os.path.exists(LOG_FILE):
     with open(LOG_FILE, "w", encoding="utf-8-sig") as f:
         f.write("")
+
+# --- VERİTABANI (SQLite) BAŞLATMA ---
+def init_db():
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS kiralamalar 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, tc TEXT, ad TEXT, tel TEXT, email TEXT, 
+                 arac TEXT, konum TEXT, bas_tarih DATE, bit_tarih DATE, gun INTEGER, 
+                 toplam_tutar REAL, durum TEXT, olusturma_tarihi DATETIME)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS iadeler 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, kiralama_id INTEGER, 
+                 km INTEGER, hasar_durumu TEXT, notlar TEXT, foto_yolu TEXT)''')
+    conn.commit()
+    return conn, c
+
+conn, c = init_db()
+
+# --- HARİTA KOORDİNATLARI ---
+LOKASYONLAR = {
+    "Konya • Ereğli Merkez / KYK Yurdu": [37.5133, 34.0525],
+    "Konya • Ereğli Otogar & Tren Garı": [37.5250, 34.0450],
+    "Konya • Çumra İlçe Merkezi": [37.5744, 32.7744],
+    "Konya • Selçuklu / Otogar": [37.9535, 32.5100],
+    "Konya • Zafer / Alaaddin Merkez": [37.8713, 32.4846],
+    "Konya • Havalimanı (KYA)": [37.9790, 32.5619],
+    "İstanbul • Sabiha Gökçen Havalimanı (SAW)": [40.8983, 29.3092],
+    "İstanbul • İstanbul Havalimanı (IST)": [41.2753, 28.7519],
+    "Ankara • Esenboğa Havalimanı (ESB)": [40.1281, 32.9951],
+    "İzmir • Adnan Menderes Havalimanı (ADB)": [38.2924, 27.1570],
+    "Antalya • Havalimanı (AYT) Dış/İç Hatlar": [36.9000, 30.7990],
+}
 
 # --- TÜRKÇE KARAKTER DÜZELTME FİLTRESİ ---
 def tr_duzelt(metin):
@@ -37,6 +74,14 @@ def tr_duzelt(metin):
     en_harfler = "iIgGuUsSoOcC"
     ceviri_tablosu = str.maketrans(tr_harfler, en_harfler)
     return metin.translate(ceviri_tablosu)
+
+# --- GERÇEK ZAMANLI MÜSAİTLİK KONTROLÜ ---
+def araba_musait_mi(arac_ad, bas_tarih, bit_tarih):
+    c.execute('''SELECT id FROM kiralamalar 
+                 WHERE arac = ? AND durum = 'Aktif' 
+                 AND (? <= bit_tarih AND ? >= bas_tarih)''', 
+              (arac_ad, bas_tarih.strftime("%Y-%m-%d"), bit_tarih.strftime("%Y-%m-%d")))
+    return len(c.fetchall()) == 0
 
 # --- PDF FATURA OLUŞTURMA FONKSİYONU ---
 def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih, gun, toplam_tutar, ekler):
@@ -75,6 +120,25 @@ def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih
     p.save()
     buffer.seek(0)
     return buffer
+
+# --- E-POSTA GÖNDERİM FONKSİYONU ---
+def eposta_gonder(alici_email, pdf_buffer, musteri_adi):
+    try:
+        msg = EmailMessage()
+        msg['Subject'] = 'DriveNow Premium - Rezervasyon Faturanız'
+        msg['From'] = GMAIL_ADRES
+        msg['To'] = alici_email
+        msg.set_content(f"Merhaba {musteri_adi},\n\nRezervasyonunuz basariyla onaylanmistir. Fatura ve kiralama detaylariniz ekteki PDF dosyasinda yer almaktadir.\n\nIyi yolculuklar dileriz.")
+        
+        pdf_data = pdf_buffer.read()
+        msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename='DriveNow_Fatura.pdf')
+        
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(GMAIL_ADRES, GMAIL_SIFRE)
+            smtp.send_message(msg)
+        return True
+    except Exception as e:
+        return False
 
 # --- ARAÇ FİLOSU ---
 ARACLAR = [
@@ -481,7 +545,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- KAYIT SİSTEMİ FONKSİYONLARI ---
+# --- KAYIT SİSTEMİ FONKSİYONLARI (.TXT) ---
 def kaydet(tip: str, mesaj: str):
     zaman = datetime.now().strftime("%d.%m.%Y %H:%M")
     with open(LOG_FILE, "a", encoding="utf-8-sig") as f:
@@ -500,14 +564,9 @@ def kayitlari_ayristir():
     return "\n".join(girisler), "\n".join(kiralama)
 
 # --- OTURUM YÖNETİMİ ---
-if "auth" not in st.session_state:
-    st.session_state["auth"] = False
-if "user" not in st.session_state:
-    st.session_state["user"] = {}
-if "secili" not in st.session_state:
-    st.session_state["secili"] = None
-if "tamamlandi" not in st.session_state:
-    st.session_state["tamamlandi"] = False
+for k in ["auth", "user", "secili", "tamamlandi", "tarihler", "son_rezervasyon"]:
+    if k not in st.session_state: 
+        st.session_state[k] = None if k in ["secili", "tarihler", "son_rezervasyon"] else (False if k in ["auth", "tamamlandi"] else {})
 
 # --- GİRİŞ EKRANI ---
 if not st.session_state["auth"]:
@@ -532,19 +591,20 @@ if not st.session_state["auth"]:
         ad = st.text_input("Ad Soyad", placeholder="Örn: Cihan Demirci")
         tc = st.text_input("T.C. Kimlik No", max_chars=11, placeholder="11 Haneli T.C. No")
         tel = st.text_input("Telefon No", max_chars=10, placeholder="5XXXXXXXXX (Başına 0 Koymadan)")
+        email = st.text_input("E-Posta Adresi (Fatura otomatik gönderimi için)")
 
         submit = st.form_submit_button("LÜKS FİLOYU KEŞFET ➔")
 
         if submit:
             tc_clean = tc.strip()
             tel_clean = tel.strip()
-            if ad.strip() and len(tc_clean) == 11 and tc_clean.isdigit() and len(tel_clean) == 10 and tel_clean.isdigit():
+            if ad.strip() and len(tc_clean) == 11 and tc_clean.isdigit() and len(tel_clean) == 10 and tel_clean.isdigit() and "@" in email:
                 st.session_state["auth"] = True
-                st.session_state["user"] = {"ad": ad.strip(), "tc": tc_clean, "tel": tel_clean}
-                kaydet("GİRİŞ", f"Ad: {ad.strip()} - TC: {tc_clean} - Tel: {tel_clean}")
+                st.session_state["user"] = {"ad": ad.strip(), "tc": tc_clean, "tel": tel_clean, "email": email.strip()}
+                kaydet("GİRİŞ", f"Ad: {ad.strip()} - TC: {tc_clean} - Tel: {tel_clean} - Email: {email.strip()}")
                 st.rerun()
             else:
-                st.error("Lütfen bilgileri eksiksiz ve doğru formatta girin (TC: 11 rakam, Tel: 10 rakam).")
+                st.error("Lütfen bilgileri eksiksiz ve doğru formatta girin (TC: 11 rakam, Tel: 10 rakam, Geçerli E-posta).")
 
 else:
     # --- ANA UYGULAMA (TABS) ---
@@ -558,24 +618,14 @@ else:
 
             c_loc, c_vites = st.columns([2, 1.5])
             with c_loc:
-                konum = st.selectbox(
-                    "📍 Teslimat Noktası",
-                    [
-                        "Konya • Ereğli Merkez / KYK Yurdu",
-                        "Konya • Ereğli Otogar & Tren Garı",
-                        "Konya • Çumra İlçe Merkezi",
-                        "Konya • Selçuklu / Otogar",
-                        "Konya • Zafer / Alaaddin Merkez",
-                        "Konya • Havalimanı (KYA)",
-                        "İstanbul • Sabiha Gökçen Havalimanı (SAW)",
-                        "İstanbul • İstanbul Havalimanı (IST)",
-                        "Ankara • Esenboğa Havalimanı (ESB)",
-                        "İzmir • Adnan Menderes Havalimanı (ADB)",
-                        "Antalya • Havalimanı (AYT) Dış/İç Hatlar",
-                    ],
-                )
+                konum = st.selectbox("📍 Teslimat Noktası", list(LOKASYONLAR.keys()))
             with c_vites:
                 vites_filtre = st.selectbox("🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
+
+            # Harita Entegrasyonu
+            if konum in LOKASYONLAR:
+                df_map = pd.DataFrame([{"lat": LOKASYONLAR[konum][0], "lon": LOKASYONLAR[konum][1]}])
+                st.map(df_map, zoom=12, use_container_width=True)
 
             # 📅 TARİH ARALIĞI SEÇİMİ
             c_t1, c_t2 = st.columns(2)
@@ -593,14 +643,21 @@ else:
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 🚗 ARAÇ LİSTESİ
+            # Dinamik İndirim Algoritması (7 gün ve üzeri kiralamalara %15 indirim)
+            indirim_orani = 0.85 if gun >= 7 else 1.0
+            if gun >= 7: 
+                st.success(f"🎉 {gun} Günlük Uzun Dönem Kiralama: Otomatik %15 İndirim Uygulandı!")
+
+            # 🚗 ARAÇ LİSTESİ VE GERÇEK ZAMANLI MÜSAİTLİK
             musait_sayisi = 0
             for a in ARACLAR:
                 if vites_filtre != "Tümü" and a["vites"] != vites_filtre:
                     continue
 
                 musait_sayisi += 1
-                toplam_tutar = a["fiyat"] * gun
+                musait_mi = araba_musait_mi(a["ad"], bas_tarih, bit_tarih)
+                gunluk_fiyat = a["fiyat"] * indirim_orani
+                toplam_tutar = gunluk_fiyat * gun
 
                 chips_list = [f'<span class="feature-chip">✨ {d}</span>' for d in a["donanimlar"]]
                 chips_html = "".join(chips_list)
@@ -619,15 +676,17 @@ else:
                     f'<span class="tag-koltuk">👥 {a["koltuk"]}</span>'
                     f'<span class="tag-bagaj">🧳 {a["bagaj"]}</span>'
                     f'</div>'
-                    f'<div style="margin-top:10px;"><span class="guarantee-badge">🟢 Anında Teslim • Sınırsız KM • Full Kasko</span></div>'
+                    f'<div style="margin-top:10px;">'
+                    f'<span class="guarantee-badge">{"🟢 Seçilen Tarihlerde Müsait" if musait_mi else "🔴 Seçilen Tarihlerde Dolu"}</span>'
+                    f'</div>'
                     f'<div class="price-row-box">'
                     f'<div>'
                     f'<div style="font-size:10px; font-weight:800; color:#94A3B8;">GÜNLÜK PİYASA DEĞERİ</div>'
-                    f'<div style="font-size:20px; font-weight:900; color:#38BDF8;">{a["fiyat"]:,} ₺</div>'
+                    f'<div style="font-size:20px; font-weight:900; color:#38BDF8;">{gunluk_fiyat:,.0f} ₺</div>'
                     f'</div>'
                     f'<div style="text-align:right;">'
                     f'<div style="font-size:10px; font-weight:800; color:#94A3B8;">{gun} GÜNLÜK TOPLAM</div>'
-                    f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{toplam_tutar:,} ₺</div>'
+                    f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{toplam_tutar:,.0f} ₺</div>'
                     f'</div>'
                     f'</div>'
                     f'</div>'
@@ -652,19 +711,20 @@ else:
                         unsafe_allow_html=True,
                     )
 
-                if st.button(f"⚡ Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"):
-                    st.session_state["secili"] = {
-                        "ad": a["ad"],
-                        "kat": a["kat"],
-                        "fiyat": a["fiyat"],
-                        "toplam": toplam_tutar,
-                        "gun": gun,
-                        "konum": konum,
-                        "bas_tarih": bas_tarih,
-                        "bit_tarih": bit_tarih
-                    }
-                    st.session_state["tamamlandi"] = False
-                    st.rerun()
+                if musait_mi:
+                    if st.button(f"⚡ Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"):
+                        st.session_state["secili"] = {
+                            "ad": a["ad"],
+                            "kat": a["kat"],
+                            "fiyat": gunluk_fiyat,
+                            "toplam": toplam_tutar,
+                            "gun": gun,
+                            "konum": konum,
+                            "bas_tarih": bas_tarih,
+                            "bit_tarih": bit_tarih
+                        }
+                        st.session_state["tamamlandi"] = False
+                        st.rerun()
 
                 st.write("")
 
@@ -672,11 +732,11 @@ else:
                 st.warning("Seçilen vites tipine uygun araç bulunamadı.")
 
         else:
-            # 🔒 REZERVE VE EKSTRA HİZMETLER
+            # 🔒 REZERVE, KUPON VE EKSTRA HİZMETLER
             s = st.session_state["secili"]
             u = st.session_state["user"]
 
-            st.markdown("<h3 style='font-size:22px; font-weight:900;'>🔒 Rezerve, Ekstra Hizmetler ve Doğrulama</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:22px; font-weight:900;'>🔒 Rezerve, Kupon ve Doğrulama</h3>", unsafe_allow_html=True)
 
             summary_html = (
                 f'<div class="car-card-detailed" style="border-left: 6px solid #38BDF8 !important;">'
@@ -687,7 +747,9 @@ else:
             )
             st.markdown(summary_html, unsafe_allow_html=True)
 
-            # ➕ EKSTRA HİZMETLER BÖLÜMÜ
+            st.markdown("<b>🎟️ Promosyon / Kupon Kodu</b>", unsafe_allow_html=True)
+            promo_kod = st.text_input("Kupon Kodu Giriniz (Örn: SUPRIZ10)", placeholder="İndirim kuponu...")
+
             st.markdown("<b>✨ Ekstra Hizmet Paketleri (İsteğe Bağlı)</b>", unsafe_allow_html=True)
             e_bebek = st.checkbox("👶 Bebek Koltuğu (+150 TL/Gün)")
             e_wifi = st.checkbox("🌐 Araç İçi Taşınabilir Wi-Fi Kit (+100 TL/Gün)")
@@ -706,11 +768,14 @@ else:
                 secilen_ekler.append("Full Kasko")
 
             genel_toplam = s["toplam"] + ek_tutar
+            if promo_kod.strip().upper() == "SUPRIZ10":
+                genel_toplam *= 0.90
+                st.success("🎉 SUPRIZ10 Kuponu Uygulandı: %10 Ek İndirim Kazandınız!")
 
             st.markdown(
                 f'<div class="price-row-box">'
-                f'<div style="font-size:14px; font-weight:800;">Genel Toplam Tutar:</div>'
-                f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{genel_toplam:,} ₺</div>'
+                f'<div style="font-size:14px; font-weight:800;">Nihai Toplam Tutar:</div>'
+                f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{genel_toplam:,.0f} ₺</div>'
                 f'</div><br>',
                 unsafe_allow_html=True
             )
@@ -737,10 +802,20 @@ else:
                             with open(dosya_yolu, "wb") as f:
                                 f.write(dosya.getbuffer())
 
+                            # TXT Loglama
                             kaydet(
                                 "KİRALAMA",
-                                f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tarih: {s['bas_tarih'].strftime('%d.%m.%Y')}-{s['bit_tarih'].strftime('%d.%m.%Y')} | Tutar: {genel_toplam} ₺ | Ekler: {', '.join(secilen_ekler)} | Foto: {foto_ad}",
+                                f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tutar: {genel_toplam:,.0f} ₺ | Foto: {foto_ad}",
                             )
+
+                            # SQLite Veritabanına Kaydet (Müsaitlik kilidi için kritik)
+                            c.execute('''INSERT INTO kiralamalar 
+                                         (tc, ad, tel, email, arac, konum, bas_tarih, bit_tarih, gun, toplam_tutar, durum, olusturma_tarihi) 
+                                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
+                                      (u["tc"], u["ad"], u["tel"], u["email"], s["ad"], s["konum"], 
+                                       s["bas_tarih"].strftime("%Y-%m-%d"), s["bit_tarih"].strftime("%Y-%m-%d"), 
+                                       s["gun"], genel_toplam, "Aktif", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                            conn.commit()
 
                             st.session_state["tamamlandi"] = True
                             st.session_state["son_rezervasyon"] = {
@@ -751,33 +826,22 @@ else:
                         else:
                             st.error("Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin.")
 
-            # REZERVASYON TAMAMLANDIKTAN SONRA FORM DIŞINDA GÖSTERİLEN BÖLÜM
+            # REZERVASYON TAMAMLANDIKTAN SONRA İŞLEMLER (PDF VE E-POSTA)
             if st.session_state["tamamlandi"]:
                 st.balloons()
-                st.success(f"🎉 Tebrikler Sayın {u['ad']}! Rezervasyonunuz başarıyla oluşturuldu.")
+                st.success(f"🎉 Tebrikler Sayın {u['ad']}! Rezervasyonunuz başarıyla oluşturuldu ve sisteme işlendi.")
 
                 res_info = st.session_state["son_rezervasyon"]
 
-                # 📲 BİLGİSAYARDA AÇIK OLAN SABİT HESAPTAN MÜŞTERİNİN GİRDİĞİ NUMARAYA BİLDİRİM GÖNDERME
-                musteri_telefon = f"90{u['tel']}" # Başındaki '90' ülke kodunu sabit ekliyoruz
-                wa_mesaj = f"Merhaba {u['ad']}, DriveNow uzerinden {tr_duzelt(s['ad'])} araci icin yaptiginiz rezervasyon onaylanmistir. Kiralama Tarihleri: {s['bas_tarih'].strftime('%d.%m.%Y')} - {s['bit_tarih'].strftime('%d.%m.%Y')}. Teslim Noktasi: {tr_duzelt(s['konum'])}. Toplam Tutar: {res_info['toplam']} TL. Iyi yolculuklar dileriz!"
-                
-                # wa.me linki bu sefer müşterinin ("u['tel']") numarasına gidecek şekilde oluşturuluyor
-                wa_link = f"https://wa.me/{musteri_telefon}?text={re.sub(' ', '%20', wa_mesaj)}"
-                
-                st.markdown(
-                    f'''
-                    <a href="{wa_link}" target="_blank" style="text-decoration:none;">
-                        <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; text-align: center; font-size: 16px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
-                            💬 Müşteriye WhatsApp İle Rezervasyon Onayı Gönder
-                        </div>
-                    </a>
-                    ''', 
-                    unsafe_allow_html=True
-                )
-
-                # 📄 PDF FATURA İNDİRME
+                # 📄 PDF FATURA OLUŞTURMA
                 pdf_file = pdf_fatura_olustur(u['ad'], u['tc'], u['tel'], s['ad'], s['konum'], s['bas_tarih'], s['bit_tarih'], s['gun'], res_info['toplam'], res_info['ekler'])
+
+                # 📧 E-POSTA İLE FATURA GÖNDERİMİ
+                if eposta_gonder(u['email'], pdf_file, u['ad']):
+                    st.info(f"📧 Rezervasyon faturanız başarıyla {u['email']} adresine gönderildi.")
+                else:
+                    st.warning("⚠️ E-posta gönderilemedi. Lütfen kod içerisindeki Gmail ayarlarınızı kontrol edin.")
+
                 st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
 
             if st.button("⬅️ Başka Araç Seç"):
@@ -790,21 +854,11 @@ else:
         u_ad = st.session_state["user"]["ad"]
         u_tc = st.session_state["user"]["tc"]
 
-        bulundu = False
-        if os.path.exists(LOG_FILE):
-            with open(LOG_FILE, "r", encoding="utf-8-sig") as f:
-                for satir in f:
-                    if u_tc in satir or u_ad in satir:
-                        bulundu = True
-                        st.markdown(
-                            f'<div class="car-card-detailed" style="border-left: 6px solid #10B981 !important; padding: 16px !important;">'
-                            f'<div style="font-size: 12px; color: #34D399; font-weight: 900;">✓ KAYIT AKTİF</div>'
-                            f'<div style="font-size: 14px; font-weight: 700; margin-top: 6px;">{satir.strip()}</div>'
-                            f'</div>',
-                            unsafe_allow_html=True,
-                        )
-
-        if not bulundu:
+        # SQLite üzerinden geçmiş kayıtları çekme
+        df_gecmis = pd.read_sql_query(f"SELECT arac, konum, bas_tarih, bit_tarih, toplam_tutar, durum FROM kiralamalar WHERE tc = '{u_tc}'", conn)
+        if not df_gecmis.empty:
+            st.dataframe(df_gecmis, use_container_width=True)
+        else:
             st.info("Henüz sistemde kiralama kaydınız bulunmuyor.")
 
         # ⭐️ YORUM VE PUANLAMA SEKTÖRÜ
@@ -852,30 +906,69 @@ else:
             if sifre == ADMIN_SIFRE:
                 st.success("Yetkili Girişi Onaylandı.")
 
+                # 📲 YÖNETİCİ KONTROLLÜ WHATSAPP ONAY MERKEZİ
+                st.markdown("<b>📱 Admin WhatsApp Onay Merkezi</b>", unsafe_allow_html=True)
+                bekleyen_rez = pd.read_sql_query("SELECT id, ad, tel, arac, bas_tarih, bit_tarih, toplam_tutar FROM kiralamalar WHERE durum='Aktif'", conn)
+                
+                if not bekleyen_rez.empty:
+                    secilen_rez = st.selectbox(
+                        "Onay Mesajı Gönderilecek Rezervasyon", 
+                        bekleyen_rez.apply(lambda x: f"ID:{x['id']} - {x['ad']} ({x['arac']}) - {x['toplam_tutar']:,.0f} TL", axis=1).tolist()
+                    )
+                    
+                    if secilen_rez:
+                        r_id = secilen_rez.split(" - ")[0].replace("ID:", "")
+                        secilen_kayit = bekleyen_rez[bekleyen_rez['id'] == int(r_id)].iloc[0]
+                        
+                        if st.button("💬 Bu Müşteriye WhatsApp Onayı Gönder (Admin)"):
+                            try:
+                                musteri_tel = f"+90{secilen_kayit['tel']}"
+                                wa_mesaj = tr_duzelt(f"Sayin {secilen_kayit['ad']}, DriveNow uzerinden {secilen_kayit['arac']} araci icin yaptiginiz rezervasyon onaylanmistir. Tarihler: {secilen_kayit['bas_tarih']} / {secilen_kayit['bit_tarih']}. Tutar: {secilen_kayit['toplam_tutar']:,.0f} TL. Iyi yolculuklar dileriz!")
+                                
+                                simdi = datetime.now()
+                                kit.sendwhatmsg(musteri_tel, wa_mesaj, simdi.hour, simdi.minute + 1, 15, True, 2)
+                                st.success(f"Başarılı! {secilen_kayit['ad']} adlı müşterinin telefonuna WhatsApp onay mesajı kuyruğa eklendi.")
+                            except Exception as e:
+                                st.error("WhatsApp mesajı tetiklenirken hata oluştu. Bilgisayarınızda WhatsApp Web'in açık olduğundan emin olun.")
+                else:
+                    st.info("Onay bekleyen aktif kiralama bulunmuyor.")
+
                 # 📊 GRAFİK VE CİRO ANALİZİ
                 st.markdown("<b>📊 Ciro ve Performans Analizi</b>", unsafe_allow_html=True)
-                if os.path.exists(LOG_FILE):
-                    toplam_ciro = 0
-                    arac_kiralamalari = {}
-                    with open(LOG_FILE, "r", encoding="utf-8-sig") as f:
-                        for line in f:
-                            if "| KİRALAMA |" in line:
-                                match_tutar = re.search(r"Tutar:\s*(\d+)", line)
-                                match_arac = re.search(r"Araç:\s*([^|]+)", line)
-                                if match_tutar:
-                                    toplam_ciro += int(match_tutar.group(1))
-                                if match_arac:
-                                    car = match_arac.group(1).strip()
-                                    arac_kiralamalari[car] = arac_kiralamalari.get(car, 0) + 1
+                df_analiz = pd.read_sql_query("SELECT * FROM kiralamalar", conn)
+                if not df_analiz.empty:
+                    toplam_ciro = df_analiz['toplam_tutar'].sum()
+                    aktif_sayisi = len(df_analiz[df_analiz['durum'] == 'Aktif'])
 
                     c_m1, c_m2 = st.columns(2)
-                    c_m1.metric("Toplam Tahsilat / Ciro", f"{toplam_ciro:,} TL")
-                    c_m2.metric("Toplam Rezerve Edilen Araç", sum(arac_kiralamalari.values()))
+                    c_m1.metric("Toplam Tahsilat / Ciro", f"{toplam_ciro:,.0f} TL")
+                    c_m2.metric("Aktif Kiralama Sayısı", aktif_sayisi)
 
-                    if arac_kiralamalari:
-                        df_chart = pd.DataFrame(list(arac_kiralamalari.items()), columns=["Araç", "Kiralama Sayısı"])
-                        fig = px.pie(df_chart, values="Kiralama Sayısı", names="Araç", title="Araç Bazlı Kiralama Dağılımı", hole=0.4)
-                        st.plotly_chart(fig, use_container_width=True)
+                    fig = px.pie(df_analiz, names='arac', title="Araç Bazlı Kiralama Dağılımı", hole=0.4)
+                    st.plotly_chart(fig, use_container_width=True)
+
+                # 🛠️ ARAÇ İADE (CHECK-OUT) VE HASAR KAYDI
+                st.markdown("<b>🛠️ Araç İade & Hasar Yönetimi</b>", unsafe_allow_html=True)
+                aktifler = pd.read_sql_query("SELECT id, tc, ad, arac FROM kiralamalar WHERE durum='Aktif'", conn)
+                
+                if not aktifler.empty:
+                    secilen_iade_id = st.selectbox("İade Alınacak İşlem (ID - Müşteri - Araç)", aktifler.apply(lambda x: f"{x['id']} - {x['ad']} - {x['arac']}", axis=1).tolist(), key="iade_select")
+                    k_id = secilen_iade_id.split(" - ")[0]
+                    
+                    with st.form("iade_formu"):
+                        km = st.number_input("Dönüş Kilometresi", min_value=0, step=100)
+                        hasar_durum = st.selectbox("Hasar Durumu", ["Sorunsuz", "Çizik/Gövde Hasarı", "Mekanik Arıza", "Kaza Tutanaklı"])
+                        notlar = st.text_area("Yönetici Notları")
+                        
+                        if st.form_submit_button("İadeyi Tamamla ve Aracı Filoya Tekrar Müsait Yap"):
+                            c.execute("UPDATE kiralamalar SET durum = 'Tamamlandı' WHERE id = ?", (k_id,))
+                            c.execute("INSERT INTO iadeler (kiralama_id, km, hasar_durumu, notlar, foto_yolu) VALUES (?,?,?,?,?)", 
+                                      (k_id, km, hasar_durum, notlar, "Yok"))
+                            conn.commit()
+                            st.success("Araç başarıyla iade alındı ve takvimi tekrar müsait duruma getirildi.")
+                            st.rerun()
+                else:
+                    st.info("Sistemde iade bekleyen aktif kiralama bulunmuyor.")
 
                 g_logs, k_logs = kayitlari_ayristir()
                 st.markdown("<b>📄 Sistem Raporları (.txt)</b>", unsafe_allow_html=True)
@@ -900,6 +993,8 @@ else:
                 if st.button("🚨 Tüm Verileri ve Fotoğrafları Sıfırla"):
                     if os.path.exists(LOG_FILE):
                         os.remove(LOG_FILE)
+                    if os.path.exists(DB_FILE):
+                        os.remove(DB_FILE)
                     for f in os.listdir(UPLOAD_DIR):
                         os.remove(os.path.join(UPLOAD_DIR, f))
                     st.success("Tüm veriler temizlendi!")

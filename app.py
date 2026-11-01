@@ -21,8 +21,8 @@ st.set_page_config(
 
 # --- SECRETS MANAGEMENT & AYARLAR ---
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
-GMAIL_ADRES = "sirket_epostaniz@gmail.com"  # E-posta gönderecek şirket hesabı
-GMAIL_SIFRE = "uygulama_sifresi_buraya"       # Google Uygulama Şifresi (16 Haneli)
+GMAIL_ADRES = "demircicihan788@gmail.com"  # E-posta gönderecek şirket hesabı
+GMAIL_SIFRE = "mjleglfzrcrxnmqb"       # Google Uygulama Şifresi (16 Haneli)
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"

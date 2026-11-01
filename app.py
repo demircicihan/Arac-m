@@ -3,7 +3,6 @@ import re
 import io
 import hmac
 import sqlite3
-import random
 from contextlib import closing
 from urllib.parse import quote
 import pandas as pd
@@ -787,11 +786,11 @@ def kayitlari_ayristir():
     return "\n".join(girisler), "\n".join(kiralama)
 
 # --- OTURUM YÖNETİMİ ---
-for k in ["auth", "user", "secili", "tamamlandi", "tarihler", "son_rezervasyon", "fatura_pdf", "eposta_sonuc", "otp_kod", "otp_gonderildi"]:
+for k in ["auth", "user", "secili", "tamamlandi", "tarihler", "son_rezervasyon", "fatura_pdf", "eposta_sonuc"]:
     if k not in st.session_state: 
-        st.session_state[k] = None if k in ["secili", "tarihler", "son_rezervasyon", "fatura_pdf", "eposta_sonuc", "otp_kod"] else (False if k in ["auth", "tamamlandi", "otp_gonderildi"] else {})
+        st.session_state[k] = None if k in ["secili", "tarihler", "son_rezervasyon", "fatura_pdf", "eposta_sonuc"] else (False if k in ["auth", "tamamlandi"] else {})
 
-# --- GİRİŞ EKRANI & SMS OTP DOĞRULAMA ---
+# --- GİRİŞ EKRANI ---
 if not st.session_state["auth"]:
     st.markdown(
         """
@@ -806,59 +805,28 @@ if not st.session_state["auth"]:
         unsafe_allow_html=True,
     )
 
-    if not st.session_state["otp_gonderildi"]:
-        with st.form("login_form"):
-            st.markdown("<p style='font-size: 17px; font-weight: 800; margin-bottom: 12px;'>👋 Hoş Geldiniz, Bilgilerinizi Girin</p>", unsafe_allow_html=True)
-            ad = st.text_input("Ad Soyad", placeholder="Örn: Cihan Demirci")
-            tc = st.text_input("T.C. Kimlik No", max_chars=11, placeholder="11 Haneli T.C. No")
-            tel = st.text_input("Telefon No", max_chars=10, placeholder="5XXXXXXXXX (Başına 0 Koymadan)")
-            email = st.text_input("E-Posta Adresi (Fatura otomatik gönderimi için)")
+    with st.form("login_form"):
+        st.markdown(
+            "<p style='font-size: 17px; font-weight: 800; margin-bottom: 12px;'>👋 Hoş Geldiniz, Bilgilerinizi Girin</p>",
+            unsafe_allow_html=True,
+        )
+        ad = st.text_input("Ad Soyad", placeholder="Örn: Cihan Demirci")
+        tc = st.text_input("T.C. Kimlik No", max_chars=11, placeholder="11 Haneli T.C. No")
+        tel = st.text_input("Telefon No", max_chars=10, placeholder="5XXXXXXXXX (Başına 0 Koymadan)")
+        email = st.text_input("E-Posta Adresi (Fatura otomatik gönderimi için)")
 
-            submit = st.form_submit_button("SMS DOĞRULAMA KODU GÖNDER ➔")
+        submit = st.form_submit_button("LÜKS FİLOYU KEŞFET ➔")
 
-            if submit:
-                tc_clean = tc.strip()
-                tel_clean = tel.strip()
-                if ad.strip() and len(tc_clean) == 11 and tc_clean.isdigit() and len(tel_clean) == 10 and tel_clean.isdigit() and "@" in email:
-                    # 6 haneli rastgele OTP kodu üret
-                    uretilen_kod = str(random.randint(100000, 999999))
-                    st.session_state["otp_kod"] = uretilen_kod
-                    st.session_state["temp_user"] = {"ad": ad.strip(), "tc": tc_clean, "tel": tel_clean, "email": email.strip()}
-                    st.session_state["otp_gonderildi"] = True
-                    st.rerun()
-                else:
-                    st.error("Lütfen bilgileri eksiksiz ve doğru formatta girin (TC: 11 rakam, Tel: 10 rakam, Geçerli E-posta).")
-    else:
-        # OTP Kod Doğrulama Ekranı
-        st.info(f"📱 +90 {st.session_state['temp_user']['tel']} numaralı telefona SMS doğrulama kodu gönderildi.")
-        
-        # Simüle edilmiş SMS kutusu (Gerçek projede burası SMS API'sine bağlanır)
-        st.warning(f"💬 [SİMÜLASYON SMS] DriveNow Doğrulama Kodunuz: **{st.session_state['otp_kod']}**")
-
-        with st.form("otp_form"):
-            girilen_kod = st.text_input("6 Haneli SMS Doğrulama Kodunu Girin", max_chars=6, placeholder="Örn: 482910")
-            col1, col2 = st.columns(2)
-            with col1:
-                dogrula_btn = st.form_submit_button("KODU ONAYLA VE GİRİŞ YAP ➔")
-            with col2:
-                geri_btn = st.form_submit_button("← Bilgileri Düzenle")
-
-            if dogrula_btn:
-                if girilen_kod.strip() == st.session_state["otp_kod"]:
-                    st.session_state["auth"] = True
-                    st.session_state["user"] = st.session_state["temp_user"]
-                    kaydet("GİRİŞ", f"Ad: {st.session_state['user']['ad']} - TC: {st.session_state['user']['tc']} - Tel: {st.session_state['user']['tel']} - Email: {st.session_state['user']['email']}")
-                    # Temizlik
-                    st.session_state["otp_gonderildi"] = False
-                    st.session_state["otp_kod"] = None
-                    st.rerun()
-                else:
-                    st.error("Hatalı doğrulama kodu! Lütfen tekrar deneyin.")
-            
-            if geri_btn:
-                st.session_state["otp_gonderildi"] = False
-                st.session_state["otp_kod"] = None
+        if submit:
+            tc_clean = tc.strip()
+            tel_clean = tel.strip()
+            if ad.strip() and len(tc_clean) == 11 and tc_clean.isdigit() and len(tel_clean) == 10 and tel_clean.isdigit() and "@" in email:
+                st.session_state["auth"] = True
+                st.session_state["user"] = {"ad": ad.strip(), "tc": tc_clean, "tel": tel_clean, "email": email.strip()}
+                kaydet("GİRİŞ", f"Ad: {ad.strip()} - TC: {tc_clean} - Tel: {tel_clean} - Email: {email.strip()}")
                 st.rerun()
+            else:
+                st.error("Lütfen bilgileri eksiksiz ve doğru formatta girin (TC: 11 rakam, Tel: 10 rakam, Geçerli E-posta).")
 
 else:
     # --- ANA UYGULAMA (TABS) ---
@@ -1213,6 +1181,7 @@ else:
                 if VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR:
                     st.warning("Varsayılan admin şifresi kullanılıyor. Güvenlik için `ADMIN_SIFRE` değerini `.streamlit/secrets.toml` dosyasına ekleyin.")
 
+                # 💬 MÜŞTERİ YORUMLARI MERKEZİ
                 st.markdown("<br><b>💬 Müşteri Yorumları ve Değerlendirmeleri</b>", unsafe_allow_html=True)
                 df_yorumlar = db_oku("SELECT ad, arac, puan, yorum, tarih FROM yorumlar ORDER BY id DESC")
                 if not df_yorumlar.empty:
@@ -1341,5 +1310,4 @@ else:
             st.session_state["tamamlandi"] = False
             st.session_state["fatura_pdf"] = None
             st.session_state["eposta_sonuc"] = None
-            st.session_state["otp_gonderildi"] = False
             st.rerun()

@@ -140,7 +140,7 @@ def eposta_gonder(alici_email, pdf_buffer, musteri_adi):
     except Exception as e:
         return False
 
-# --- ARAÇ FİLOSU ---
+# --- ARAÇ FİLOSu ---
 ARACLAR = [
     {
         "ad": "Fiat Egea Cross Lounge",

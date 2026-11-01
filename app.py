@@ -73,6 +73,8 @@ def init_db():
         conn.execute('''CREATE TABLE IF NOT EXISTS iadeler 
                      (id INTEGER PRIMARY KEY AUTOINCREMENT, kiralama_id INTEGER, 
                      km INTEGER, hasar_durumu TEXT, notlar TEXT, foto_yolu TEXT)''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS yorumlar 
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT, ad TEXT, arac TEXT, puan INTEGER, yorum TEXT, tarih DATETIME)''')
 
 init_db()
 
@@ -150,7 +152,6 @@ def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih
 
 # --- E-POSTA GÖNDERİM FONKSİYONU ---
 def eposta_gonder(alici_email, pdf_bytes, musteri_adi):
-    """E-postayı gönderir. (basarili: bool, hata_mesaji: str) döndürür."""
     if not GMAIL_ADRES or not GMAIL_SIFRE:
         return False, ("E-posta ayarları eksik: GMAIL_ADRES ve GMAIL_SIFRE "
                        "değerlerini .streamlit/secrets.toml dosyasına ekleyin.")
@@ -1141,6 +1142,10 @@ else:
 
             if y_submit and yorum.strip():
                 kaydet("YORUM", f"Müşteri: {u_ad} | Araç: {sec_arac} | Puan: {puan}★ | Yorum: {yorum.strip()}")
+                db_calistir(
+                    "INSERT INTO yorumlar (ad, arac, puan, yorum, tarih) VALUES (?, ?, ?, ?, ?)",
+                    (u_ad, sec_arac, puan, yorum.strip(), datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                )
                 st.success("Yorumunuz ve değerlendirmeniz başarıyla iletildi!")
 
     with t3:
@@ -1175,6 +1180,14 @@ else:
                 st.success("Yetkili Girişi Onaylandı.")
                 if VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR:
                     st.warning("Varsayılan admin şifresi kullanılıyor. Güvenlik için `ADMIN_SIFRE` değerini `.streamlit/secrets.toml` dosyasına ekleyin.")
+
+                # 💬 MÜŞTERİ YORUMLARI MERKEZİ
+                st.markdown("<br><b>💬 Müşteri Yorumları ve Değerlendirmeleri</b>", unsafe_allow_html=True)
+                df_yorumlar = db_oku("SELECT ad, arac, puan, yorum, tarih FROM yorumlar ORDER BY id DESC")
+                if not df_yorumlar.empty:
+                    st.dataframe(df_yorumlar, width="stretch")
+                else:
+                    st.info("Henüz müşteriler tarafından gönderilmiş bir yorum bulunmuyor.")
 
                 st.markdown("<b>📱 Admin WhatsApp Onay Merkezi</b>", unsafe_allow_html=True)
                 bekleyen_rez = db_oku(
@@ -1284,7 +1297,7 @@ else:
                         os.remove(DB_FILE)
                     for f in os.listdir(UPLOAD_DIR):
                         os.remove(os.path.join(UPLOAD_DIR, f))
-                    init_db()         # silinen veritabanını boş şemasıyla yeniden oluştur
+                    init_db()
                     st.success("Tüm veriler temizlendi!")
                     st.rerun()
             elif sifre != "":

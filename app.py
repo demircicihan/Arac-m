@@ -18,6 +18,7 @@ st.set_page_config(
 
 # --- SECRETS MANAGEMENT ---
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
+YONETICI_WA_TEL = "905317653420" 
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
@@ -28,38 +29,47 @@ if not os.path.exists(LOG_FILE):
     with open(LOG_FILE, "w", encoding="utf-8-sig") as f:
         f.write("")
 
+# --- TÜRKÇE KARAKTER DÜZELTME FİLTRESİ ---
+def tr_duzelt(metin):
+    if not isinstance(metin, str):
+        return str(metin)
+    tr_harfler = "ıİğĞüÜşŞöÖçÇ"
+    en_harfler = "iIgGuUsSoOcC"
+    ceviri_tablosu = str.maketrans(tr_harfler, en_harfler)
+    return metin.translate(ceviri_tablosu)
+
 # --- PDF FATURA OLUŞTURMA FONKSİYONU ---
 def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih, gun, toplam_tutar, ekler):
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     
     p.setFont("Helvetica-Bold", 18)
-    p.drawString(50, 750, "DRIVENOW PREMIUM RENTALS - REZERVASYON ÖZETİ")
+    p.drawString(50, 750, tr_duzelt("DRIVENOW PREMIUM RENTALS - REZERVASYON OZETI"))
     p.line(50, 740, 550, 740)
     
     p.setFont("Helvetica", 12)
-    p.drawString(50, 710, f"Tarih: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
-    p.drawString(50, 690, f"Musteri Ad Soyad: {musteri_ad}")
-    p.drawString(50, 670, f"TC Kimlik No: {tc}")
-    p.drawString(50, 650, f"Telefon: {tel}")
+    p.drawString(50, 710, tr_duzelt(f"Tarih: {datetime.now().strftime('%d.%m.%Y %H:%M')}"))
+    p.drawString(50, 690, tr_duzelt(f"Musteri Ad Soyad: {musteri_ad}"))
+    p.drawString(50, 670, tr_duzelt(f"TC Kimlik No: {tc}"))
+    p.drawString(50, 650, tr_duzelt(f"Telefon: {tel}"))
     
     p.line(50, 635, 550, 635)
     
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, 610, "KIRALAMA VE ARAÇ BİLGİLERİ")
+    p.drawString(50, 610, tr_duzelt("KIRALAMA VE ARAC BILGILERI"))
     p.setFont("Helvetica", 12)
-    p.drawString(50, 585, f"Arac Modeli: {arac_ad}")
-    p.drawString(50, 565, f"Teslimat Noktasi: {konum}")
-    p.drawString(50, 545, f"Tarihler: {bas_tarih.strftime('%d.%m.%Y')} - {bit_tarih.strftime('%d.%m.%Y')} ({gun} Gun)")
+    p.drawString(50, 585, tr_duzelt(f"Arac Modeli: {arac_ad}"))
+    p.drawString(50, 565, tr_duzelt(f"Teslimat Noktasi: {konum}"))
+    p.drawString(50, 545, tr_duzelt(f"Tarihler: {bas_tarih.strftime('%d.%m.%Y')} - {bit_tarih.strftime('%d.%m.%Y')} ({gun} Gun)"))
     
     if ekler:
-        p.drawString(50, 525, f"Ekstra Hizmetler: {', '.join(ekler)}")
+        p.drawString(50, 525, tr_duzelt(f"Ekstra Hizmetler: {', '.join(ekler)}"))
     
     p.line(50, 505, 550, 505)
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, 475, f"TOPLAM TUTAR: {toplam_tutar:,.0f} TL")
+    p.drawString(50, 475, tr_duzelt(f"TOPLAM TUTAR: {toplam_tutar:,.0f} TL"))
     p.setFont("Helvetica-Oblique", 10)
-    p.drawString(50, 450, "* Odeme arac teslimatinda nakit veya kredi karti ile yapilacaktir.")
+    p.drawString(50, 450, tr_duzelt("* Odeme arac teslimatinda nakit veya kredi karti ile yapilacaktir."))
     
     p.showPage()
     p.save()
@@ -750,7 +760,7 @@ else:
 
                 # 📲 BİLGİSAYARDA AÇIK OLAN SABİT HESAPTAN MÜŞTERİNİN GİRDİĞİ NUMARAYA BİLDİRİM GÖNDERME
                 musteri_telefon = f"90{u['tel']}" # Başındaki '90' ülke kodunu sabit ekliyoruz
-                wa_mesaj = f"Merhaba {u['ad']}, DriveNow üzerinden {s['ad']} aracı için yaptığınız rezervasyon onaylanmıştır. Kiralama Tarihleri: {s['bas_tarih'].strftime('%d.%m.%Y')} - {s['bit_tarih'].strftime('%d.%m.%Y')}. Teslim Noktası: {s['konum']}. Toplam Tutar: {res_info['toplam']} TL. İyi yolculuklar dileriz!"
+                wa_mesaj = f"Merhaba {u['ad']}, DriveNow uzerinden {tr_duzelt(s['ad'])} araci icin yaptiginiz rezervasyon onaylanmistir. Kiralama Tarihleri: {s['bas_tarih'].strftime('%d.%m.%Y')} - {s['bit_tarih'].strftime('%d.%m.%Y')}. Teslim Noktasi: {tr_duzelt(s['konum'])}. Toplam Tutar: {res_info['toplam']} TL. Iyi yolculuklar dileriz!"
                 
                 # wa.me linki bu sefer müşterinin ("u['tel']") numarasına gidecek şekilde oluşturuluyor
                 wa_link = f"https://wa.me/{musteri_telefon}?text={re.sub(' ', '%20', wa_mesaj)}"

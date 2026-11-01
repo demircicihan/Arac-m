@@ -242,7 +242,7 @@ st.markdown(
         border-radius: 26px !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3) !important;
-        margin-bottom: 22px !important;
+        margin-bottom: 12px !important;
         transition: transform 0.3s ease, border-color 0.3s ease !important;
     }
     .car-card-detailed:hover {
@@ -349,7 +349,7 @@ st.markdown(
         background: rgba(15, 23, 42, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 14px !important;
-        margin-top: 10px !important;
+        margin-bottom: 15px !important;
     }
 
     [data-testid="stDownloadButton"] > button {
@@ -517,7 +517,7 @@ else:
 
     with t1:
         if st.session_state["secili"] is None:
-            # 🔍 ARAMA & FİLTRELEME PANELİ (GENİŞLETİLMİŞ TESLİMAT NOKTALARI)
+            # 🔍 ARAMA & FİLTRELEME PANELİ
             st.markdown('<div class="search-card">', unsafe_allow_html=True)
             st.markdown(
                 f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>",
@@ -551,7 +551,7 @@ else:
                 )
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 🚗 GÜNCEL PİYASA FİYATLI ARAÇ LİSTESİ
+            # 🚗 ARAÇ LİSTESİ
             musait_sayisi = 0
             for a in ARACLAR:
                 if vites_filtre != "Tümü" and a["vites"] != vites_filtre:
@@ -593,8 +593,8 @@ else:
                 )
                 st.markdown(card_html, unsafe_allow_html=True)
 
-                # 🔍 TIKLANABİLİR TÜM DETAYLAR BÖLÜMÜ
-                with st.expander(f"🔍 {a['ad']} - Tüm Teknik ve Donanım Özelliklerini Gör"):
+                # 🔍 DETAY EXPANDER (HATA DÜZELTİLDİ)
+                with st.expander(f"📋 Tüm Teknik ve Donanım Özelliklerini Gör"):
                     st.markdown(
                         f"""
                         <div class="tech-grid">

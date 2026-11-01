@@ -1,7 +1,12 @@
 import os
 import re
-from datetime import datetime
+import io
+import pandas as pd
+import plotly.express as px
+from datetime import datetime, timedelta
 import streamlit as st
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # --- SAYFA AYARLARI ---
 st.set_page_config(
@@ -23,7 +28,45 @@ if not os.path.exists(LOG_FILE):
     with open(LOG_FILE, "w", encoding="utf-8-sig") as f:
         f.write("")
 
-# --- GÜNCEL PİYASA DEĞERLERİNE GÖRE DÜZENLENMİŞ LÜKS ARAÇ FİLOSU ---
+# --- PDF FATURA OLUŞTURMA FONKSİYONU ---
+def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih, gun, toplam_tutar, ekler):
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(50, 750, "DRIVENOW PREMIUM RENTALS - REZERVASYON ÖZETİ")
+    p.line(50, 740, 550, 740)
+    
+    p.setFont("Helvetica", 12)
+    p.drawString(50, 710, f"Tarih: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    p.drawString(50, 690, f"Musteri Ad Soyad: {musteri_ad}")
+    p.drawString(50, 670, f"TC Kimlik No: {tc}")
+    p.drawString(50, 650, f"Telefon: {tel}")
+    
+    p.line(50, 635, 550, 635)
+    
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(50, 610, "KIRALAMA VE ARAÇ BİLGİLERİ")
+    p.setFont("Helvetica", 12)
+    p.drawString(50, 585, f"Arac Modeli: {arac_ad}")
+    p.drawString(50, 565, f"Teslimat Noktasi: {konum}")
+    p.drawString(50, 545, f"Tarihler: {bas_tarih.strftime('%d.%m.%Y')} - {bit_tarih.strftime('%d.%m.%Y')} ({gun} Gun)")
+    
+    if ekler:
+        p.drawString(50, 525, f"Ekstra Hizmetler: {', '.join(ekler)}")
+    
+    p.line(50, 505, 550, 505)
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, 475, f"TOPLAM TUTAR: {toplam_tutar:,.0f} TL")
+    p.setFont("Helvetica-Oblique", 10)
+    p.drawString(50, 450, "* Odeme arac teslimatinda nakit veya kredi karti ile yapilacaktir.")
+    
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer
+
+# --- ARAÇ FİLOSU ---
 ARACLAR = [
     {
         "ad": "Fiat Egea Cross Lounge",
@@ -207,7 +250,7 @@ ARACLAR = [
     },
 ]
 
-# --- MODERN CSS TASARIMI (YAZI VE IKON ÇAKIŞMA DÜZELTMESİ EKLENDİ) ---
+# --- MODERN CSS TASARIMI ---
 st.markdown(
     """
     <style>
@@ -345,7 +388,7 @@ st.markdown(
         cursor: pointer !important;
     }
 
-    /* 🔥 BOZUK IKON YAZISINI GİZLEYEN STİL KODU */
+    /* 🔥 BOZUK İKON YAZISINI GİZLEYEN STİL */
     div[data-testid="stExpander"] {
         background: rgba(15, 23, 42, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -441,13 +484,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 # --- KAYIT SİSTEMİ FONKSİYONLARI ---
 def kaydet(tip: str, mesaj: str):
     zaman = datetime.now().strftime("%d.%m.%Y %H:%M")
     with open(LOG_FILE, "a", encoding="utf-8-sig") as f:
         f.write(f"{zaman} | {tip} | {mesaj}\n")
-
 
 def kayitlari_ayristir():
     if not os.path.exists(LOG_FILE):
@@ -460,7 +501,6 @@ def kayitlari_ayristir():
             elif "| KİRALAMA |" in satir:
                 kiralama.append(satir.strip())
     return "\n".join(girisler), "\n".join(kiralama)
-
 
 # --- OTURUM YÖNETİMİ ---
 if "auth" not in st.session_state:
@@ -491,109 +531,67 @@ if not st.session_state["auth"]:
             unsafe_allow_html=True,
         )
         ad = st.text_input("Ad Soyad", placeholder="Örn: Cihan Demirci")
-        tc = st.text_input(
-            "T.C. Kimlik No", max_chars=11, placeholder="11 Haneli T.C. No"
-        )
-        tel = st.text_input(
-            "Telefon No", max_chars=10, placeholder="5XXXXXXXXX"
-        )
+        tc = st.text_input("T.C. Kimlik No", max_chars=11, placeholder="11 Haneli T.C. No")
+        tel = st.text_input("Telefon No", max_chars=10, placeholder="5XXXXXXXXX")
 
         submit = st.form_submit_button("LÜKS FİLOYU KEŞFET ➔")
 
         if submit:
             tc_clean = tc.strip()
             tel_clean = tel.strip()
-            if (
-                ad.strip()
-                and len(tc_clean) == 11
-                and tc_clean.isdigit()
-                and len(tel_clean) == 10
-                and tel_clean.isdigit()
-            ):
+            if ad.strip() and len(tc_clean) == 11 and tc_clean.isdigit() and len(tel_clean) == 10 and tel_clean.isdigit():
                 st.session_state["auth"] = True
-                st.session_state["user"] = {
-                    "ad": ad.strip(),
-                    "tc": tc_clean,
-                    "tel": tel_clean,
-                }
-                kaydet(
-                    "GİRİŞ",
-                    f"Ad: {ad.strip()} - TC: {tc_clean} - Tel: {tel_clean}",
-                )
+                st.session_state["user"] = {"ad": ad.strip(), "tc": tc_clean, "tel": tel_clean}
+                kaydet("GİRİŞ", f"Ad: {ad.strip()} - TC: {tc_clean} - Tel: {tel_clean}")
                 st.rerun()
             else:
-                st.error(
-                    "Lütfen bilgileri eksiksiz ve doğru formatta girin (TC: 11 rakam, Tel: 10 rakam)."
-                )
+                st.error("Lütfen bilgileri eksiksiz ve doğru formatta girin (TC: 11 rakam, Tel: 10 rakam).")
 
 else:
     # --- ANA UYGULAMA (TABS) ---
-    t1, t2, t3 = st.tabs(["🏎️ Araç Filosu", "📜 Kiralama Kayıtlarım", "🔑 Yönetici"])
+    t1, t2, t3 = st.tabs(["🏎️ Araç Filosu", "📜 Kiralama Kayıtlarım & Yorum Yap", "🔑 Yönetici"])
 
     with t1:
         if st.session_state["secili"] is None:
-            # 🔍 ARAMA & FİLTRELEME PANELİ (GENİŞLETİLMİŞ TESLİMAT NOKTALARI)
+            # 🔍 ARAMA & TARİH SEÇİM PANELİ
             st.markdown('<div class="search-card">', unsafe_allow_html=True)
-            st.markdown(
-                f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown(f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>", unsafe_allow_html=True)
 
-            c_loc, c_vites, c_gun = st.columns([2, 1.5, 1])
+            c_loc, c_vites = st.columns([2, 1.5])
             with c_loc:
                 konum = st.selectbox(
                     "📍 Teslimat Noktası",
                     [
-                        # Yerel Teslimat Noktaları
                         "Konya • Ereğli Merkez / KYK Yurdu",
                         "Konya • Ereğli Otogar & Tren Garı",
                         "Konya • Çumra İlçe Merkezi",
                         "Konya • Selçuklu / Otogar",
                         "Konya • Zafer / Alaaddin Merkez",
-                        "Konya • Meram Yaka",
                         "Konya • Havalimanı (KYA)",
-                        
-                        # Marmara Bölgesi
                         "İstanbul • Sabiha Gökçen Havalimanı (SAW)",
                         "İstanbul • İstanbul Havalimanı (IST)",
-                        "İstanbul • Kadıköy VIP Şube",
-                        "İstanbul • Maslak VIP Şube",
-                        "Bursa • Şehir Merkezi / Nilüfer",
-                        "Kocaeli • İzmit Şehir Merkezi",
-                        
-                        # İç Anadolu Bölgesi
                         "Ankara • Esenboğa Havalimanı (ESB)",
-                        "Ankara • YHT Gar / AŞTİ Otogar",
-                        "Ankara • Çankaya VIP Şube",
-                        "Kayseri • Erkilet Havalimanı (ASR)",
-                        "Eskişehir • Odunpazarı Şehir Merkezi",
-                        
-                        # Ege Bölgesi
                         "İzmir • Adnan Menderes Havalimanı (ADB)",
-                        "İzmir • Alsancak Şehir Merkezi",
-                        "Muğla • Bodrum-Milas Havalimanı (BJV)",
-                        "Muğla • Dalaman Havalimanı (DLM)",
-                        
-                        # Akdeniz Bölgesi
                         "Antalya • Havalimanı (AYT) Dış/İç Hatlar",
-                        "Antalya • Alanya Şehir Merkezi",
-                        "Adana • Şakirpaşa Havalimanı (ADA)",
-                        "Mersin • Şehir Merkezi / Marina",
-                        
-                        # Karadeniz & Doğu Bölgeleri
-                        "Trabzon • Havalimanı (TZX)",
-                        "Samsun • Çarşamba Havalimanı (SZF)",
-                        "Gaziantep • Oğuzeli Havalimanı (GZT)"
                     ],
                 )
             with c_vites:
-                vites_filtre = st.selectbox(
-                    "🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"]
-                )
-            with c_gun:
-                gun = st.number_input(
-                    "⏱ Gün", min_value=1, max_value=30, value=1
-                )
+                vites_filtre = st.selectbox("🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
+
+            # 📅 TARİH ARALIĞI SEÇİMİ
+            c_t1, c_t2 = st.columns(2)
+            with c_t1:
+                bas_tarih = st.date_input("📅 Alış Tarihi", datetime.now() + timedelta(days=1))
+            with c_t2:
+                bit_tarih = st.date_input("📅 İade Tarihi", datetime.now() + timedelta(days=2))
+
+            gun = (bit_tarih - bas_tarih).days
+            if gun <= 0:
+                st.error("⚠️ İade tarihi alış tarihinden sonra olmalıdır!")
+                gun = 1
+            else:
+                st.info(f"⏱️ Toplam Kiralama Süresi: **{gun} Gün**")
+
             st.markdown("</div>", unsafe_allow_html=True)
 
             # 🚗 ARAÇ LİSTESİ
@@ -608,7 +606,6 @@ else:
                 chips_list = [f'<span class="feature-chip">✨ {d}</span>' for d in a["donanimlar"]]
                 chips_html = "".join(chips_list)
 
-                # TEMEL KART HTML
                 card_html = (
                     f'<div class="car-card-detailed">'
                     f'<div>'
@@ -638,7 +635,6 @@ else:
                 )
                 st.markdown(card_html, unsafe_allow_html=True)
 
-                # 🔍 DETAY EXPANDER
                 with st.expander("🔻 Teknik Özellikler ve Donanımları Gör"):
                     st.markdown(
                         f"""
@@ -657,9 +653,7 @@ else:
                         unsafe_allow_html=True,
                     )
 
-                if st.button(
-                    f"⚡ Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"
-                ):
+                if st.button(f"⚡ Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"):
                     st.session_state["secili"] = {
                         "ad": a["ad"],
                         "kat": a["kat"],
@@ -667,6 +661,8 @@ else:
                         "toplam": toplam_tutar,
                         "gun": gun,
                         "konum": konum,
+                        "bas_tarih": bas_tarih,
+                        "bit_tarih": bit_tarih
                     }
                     st.rerun()
 
@@ -676,61 +672,57 @@ else:
                 st.warning("Seçilen vites tipine uygun araç bulunamadı.")
 
         else:
-            # 🔒 KİRALAMA VE DOĞRULAMA
+            # 🔒 REZERVE VE EKSTRA HİZMETLER
             s = st.session_state["secili"]
             u = st.session_state["user"]
 
-            st.markdown(
-                "<h3 style='font-size:22px; font-weight:900;'>🔒 Rezerve ve Ehliyet Doğrulama</h3>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<h3 style='font-size:22px; font-weight:900;'>🔒 Rezerve, Ekstra Hizmetler ve Doğrulama</h3>", unsafe_allow_html=True)
 
             summary_html = (
                 f'<div class="car-card-detailed" style="border-left: 6px solid #38BDF8 !important;">'
                 f'<div style="font-size:12px; font-weight:900; color:#38BDF8;">SEÇTİĞİNİZ ARAÇ ÖZETİ</div>'
                 f'<div style="font-size:26px; font-weight:900; margin:4px 0;">{s["ad"]}</div>'
-                f'<div style="font-size:14px; color:#94A3B8; font-weight:700;">📍 {s["konum"]} | ⏱ {s["gun"]} Gün Kiralama</div>'
-                f'<div class="price-row-box" style="margin-top:14px;">'
-                f'<div style="font-size:14px; font-weight:800;">Toplam Ödenecek Tutar:</div>'
-                f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{s["toplam"]:,} ₺</div>'
-                f'</div>'
+                f'<div style="font-size:14px; color:#94A3B8; font-weight:700;">📍 {s["konum"]} | ⏱ {s["gun"]} Gün ({s["bas_tarih"].strftime("%d.%m.%Y")} - {s["bit_tarih"].strftime("%d.%m.%Y")})</div>'
                 f'</div>'
             )
             st.markdown(summary_html, unsafe_allow_html=True)
 
+            # ➕ EKSTRA HİZMETLER BÖLÜMÜ
+            st.markdown("<b>✨ Ekstra Hizmet Paketleri (İsteğe Bağlı)</b>", unsafe_allow_html=True)
+            e_bebek = st.checkbox("👶 Bebek Koltuğu (+150 TL/Gün)")
+            e_wifi = st.checkbox("🌐 Araç İçi Taşınabilir Wi-Fi Kit (+100 TL/Gün)")
+            e_sigorta = st.checkbox("🛡️ Sınırsız Muafiyetsiz Kasko Güvencesi (+300 TL/Gün)")
+
+            ek_tutar = 0
+            secilen_ekler = []
+            if e_bebek:
+                ek_tutar += 150 * s["gun"]
+                secilen_ekler.append("Bebek Koltuğu")
+            if e_wifi:
+                ek_tutar += 100 * s["gun"]
+                secilen_ekler.append("Wi-Fi Kit")
+            if e_sigorta:
+                ek_tutar += 300 * s["gun"]
+                secilen_ekler.append("Full Kasko")
+
+            genel_toplam = s["toplam"] + ek_tutar
+
+            st.markdown(
+                f'<div class="price-row-box">'
+                f'<div style="font-size:14px; font-weight:800;">Genel Toplam Tutar:</div>'
+                f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{genel_toplam:,} ₺</div>'
+                f'</div><br>',
+                unsafe_allow_html=True
+            )
+
             with st.form("kiralama_onay_formu"):
-                st.markdown(
-                    "<p style='font-size:16px; font-weight:800; margin-bottom:6px;'>📄 Ehliyet ve Onay Bilgileri</p>",
-                    unsafe_allow_html=True,
-                )
-
-                st.markdown(
-                    '<span class="payment-notice-badge">💵 Ödeme İşlemi: Toplam tutar araç teslimatı sırasında nakit veya kredi kartı ile tahsil edilecektir.</span>',
-                    unsafe_allow_html=True,
-                )
-
                 c_e1, c_e2 = st.columns(2)
                 with c_e1:
-                    ehliyet_no = st.text_input(
-                        "Ehliyet Belge Seri No", placeholder="Örn: 123456"
-                    )
+                    ehliyet_no = st.text_input("Ehliyet Belge Seri No", placeholder="Örn: 123456")
                 with c_e2:
-                    ehliyet_sinif = st.selectbox(
-                        "Ehliyet Sınıfı",
-                        [
-                            "B (Binek)",
-                            "B1",
-                            "A (Motosiklet)",
-                            "C (Kamyon)",
-                            "D (Otobüs)",
-                        ],
-                    )
+                    ehliyet_sinif = st.selectbox("Ehliyet Sınıfı", ["B (Binek)", "B1", "A (Motosiklet)", "C (Kamyon)", "D (Otobüs)"])
 
-                dosya = st.file_uploader(
-                    "📷 Ehliyetinizin Ön Yüz Fotoğrafı (Zorunlu)",
-                    type=["jpg", "jpeg", "png"],
-                )
-
+                dosya = st.file_uploader("📷 Ehliyetinizin Ön Yüz Fotoğrafı (Zorunlu)", type=["jpg", "jpeg", "png"])
                 onay = st.form_submit_button("REZERVASYONU ONAYLA VE TAMAMLA ➔")
 
                 if onay:
@@ -745,29 +737,30 @@ else:
 
                         kaydet(
                             "KİRALAMA",
-                            f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Ehliyet No: {ehliyet_no} | Sınıf: {ehliyet_sinif} | Tutar: {s['toplam']} ₺ | Foto: {foto_ad}",
+                            f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tarih: {s['bas_tarih'].strftime('%d.%m.%Y')}-{s['bit_tarih'].strftime('%d.%m.%Y')} | Tutar: {genel_toplam} ₺ | Ekler: {', '.join(secilen_ekler)} | Foto: {foto_ad}",
                         )
 
                         st.balloons()
-                        st.success(
-                            f"🎉 Tebrikler Sayın {u['ad']}! {s['ad']} aracınız başarıyla rezerve edildi."
-                        )
-                        st.session_state["secili"] = None
-                        st.rerun()
+                        st.success(f"🎉 Tebrikler Sayın {u['ad']}! Rezervasyonunuz oluşturuldu.")
+
+                        # 📲 WHATSAPP BİLDİRİM LİNKİ
+                        wa_mesaj = f"Merhaba, ben {u['ad']}. {s['ad']} aracını {s['bas_tarih'].strftime('%d.%m.%Y')} tarihi için rezerve ettim. Toplam Tutar: {genel_toplam} TL."
+                        wa_link = f"https://wa.me/905000000000?text={re.sub(' ', '%20', wa_mesaj)}"
+                        st.markdown(f'<a href="{wa_link}" target="_blank" style="display:inline-block; background:#25D366; color:white; padding:12px 20px; border-radius:12px; font-weight:bold; text-decoration:none; margin-bottom:15px;">📲 WhatsApp İle Onay Bildirimi Gönder</a>', unsafe_allow_html=True)
+
+                        # 📄 PDF FATURA İNDİRME BUTONU
+                        pdf_file = pdf_fatura_olustur(u['ad'], u['tc'], u['tel'], s['ad'], s['konum'], s['bas_tarih'], s['bit_tarih'], s['gun'], genel_toplam, secilen_ekler)
+                        st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
+
                     else:
-                        st.error(
-                            "Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin."
-                        )
+                        st.error("Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin.")
 
             if st.button("⬅️ Başka Araç Seç"):
                 st.session_state["secili"] = None
                 st.rerun()
 
     with t2:
-        st.markdown(
-            "<h3 style='font-size:20px; font-weight:900; margin-bottom:12px;'>Geçmiş Kiralama Kayıtlarınız</h3>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("<h3 style='font-size:20px; font-weight:900; margin-bottom:12px;'>Geçmiş Kiralama Kayıtlarınız</h3>", unsafe_allow_html=True)
         u_ad = st.session_state["user"]["ad"]
         u_tc = st.session_state["user"]["tc"]
 
@@ -787,6 +780,18 @@ else:
 
         if not bulundu:
             st.info("Henüz sistemde kiralama kaydınız bulunmuyor.")
+
+        # ⭐️ YORUM VE PUANLAMA SEKTÖRÜ
+        st.markdown("<br><b>⭐️ Deneyiminizi Değerlendirin & Yorum Yapın</b>", unsafe_allow_html=True)
+        with st.form("yorum_formu"):
+            sec_arac = st.selectbox("Değerlendirilecek Araç", [a["ad"] for a in ARACLAR])
+            puan = st.slider("Puanınız", 1, 5, 5)
+            yorum = st.text_area("Yorumunuz")
+            y_submit = st.form_submit_button("Yorumu Gönder")
+
+            if y_submit and yorum.strip():
+                kaydet("YORUM", f"Müşteri: {u_ad} | Araç: {sec_arac} | Puan: {puan}★ | Yorum: {yorum.strip()}")
+                st.success("Yorumunuz ve değerlendirmeniz başarıyla iletildi!")
 
     with t3:
         u = st.session_state["user"]
@@ -814,50 +819,54 @@ else:
         )
         st.markdown(driver_card_html, unsafe_allow_html=True)
 
-        # 🔒 YÖNETİCİ PANELİ
+        # 🔒 YÖNETİCİ PANELİ & GRAFİKLİ ANALİZ
         lock = st.checkbox("🔒 Yönetici Paneli Girişi")
         if lock:
             sifre = st.text_input("Admin Şifresi", type="password")
             if sifre == ADMIN_SIFRE:
                 st.success("Yetkili Girişi Onaylandı.")
 
-                g_logs, k_logs = kayitlari_ayristir()
+                # 📊 GRAFİK VE CİRO ANALİZİ
+                st.markdown("<b>📊 Ciro ve Performans Analizi</b>", unsafe_allow_html=True)
+                if os.path.exists(LOG_FILE):
+                    toplam_ciro = 0
+                    arac_kiralamalari = {}
+                    with open(LOG_FILE, "r", encoding="utf-8-sig") as f:
+                        for line in f:
+                            if "| KİRALAMA |" in line:
+                                match_tutar = re.search(r"Tutar:\s*(\d+)", line)
+                                match_arac = re.search(r"Araç:\s*([^|]+)", line)
+                                if match_tutar:
+                                    toplam_ciro += int(match_tutar.group(1))
+                                if match_arac:
+                                    car = match_arac.group(1).strip()
+                                    arac_kiralamalari[car] = arac_kiralamalari.get(car, 0) + 1
 
-                st.markdown(
-                    "<b>📄 Sistem Raporları (.txt)</b>", unsafe_allow_html=True
-                )
+                    c_m1, c_m2 = st.columns(2)
+                    c_m1.metric("Toplam Tahsilat / Ciro", f"{toplam_ciro:,} TL")
+                    c_m2.metric("Toplam Rezerve Edilen Araç", sum(arac_kiralamalari.values()))
+
+                    if arac_kiralamalari:
+                        df_chart = pd.DataFrame(list(arac_kiralamalari.items()), columns=["Araç", "Kiralama Sayısı"])
+                        fig = px.pie(df_chart, values="Kiralama Sayısı", names="Araç", title="Araç Bazlı Kiralama Dağılımı", hole=0.4)
+                        st.plotly_chart(fig, use_container_width=True)
+
+                g_logs, k_logs = kayitlari_ayristir()
+                st.markdown("<b>📄 Sistem Raporları (.txt)</b>", unsafe_allow_html=True)
                 c1, c2 = st.columns(2)
                 with c1:
-                    st.download_button(
-                        "📥 Giriş Yapanlar",
-                        g_logs,
-                        "giris_yapanlar.txt",
-                        mime="text/plain",
-                    )
+                    st.download_button("📥 Giriş Yapanlar", g_logs, "giris_yapanlar.txt", mime="text/plain")
                 with c2:
-                    st.download_button(
-                        "📥 Kiralama Yapanlar",
-                        k_logs,
-                        "kiralama_kayitlari.txt",
-                        mime="text/plain",
-                    )
+                    st.download_button("📥 Kiralama Yapanlar", k_logs, "kiralama_kayitlari.txt", mime="text/plain")
 
-                st.markdown(
-                    "<br><b>📷 Yüklenen Ehliyet Fotoğrafları</b>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<br><b>📷 Yüklenen Ehliyet Fotoğrafları</b>", unsafe_allow_html=True)
                 fotolar = os.listdir(UPLOAD_DIR)
                 if fotolar:
                     for f in fotolar:
                         f_path = os.path.join(UPLOAD_DIR, f)
                         st.image(f_path, caption=f, width=240)
                         with open(f_path, "rb") as file:
-                            st.download_button(
-                                f"Fotoğrafı İndir: {f}",
-                                file,
-                                file_name=f,
-                                key=f"dl_{f}",
-                            )
+                            st.download_button(f"Fotoğrafı İndir: {f}", file, file_name=f, key=f"dl_{f}")
                 else:
                     st.info("Henüz yüklenen fotoğraf yok.")
 

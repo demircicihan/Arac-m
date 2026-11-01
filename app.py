@@ -350,18 +350,6 @@ st.markdown(
         border: 1px solid rgba(52, 211, 153, 0.25) !important;
     }
 
-    .payment-notice-badge {
-        background: rgba(16, 185, 129, 0.15) !important;
-        color: #34D399 !important;
-        font-weight: 800 !important;
-        font-size: 13px !important;
-        padding: 10px 16px !important;
-        border-radius: 14px !important;
-        display: block !important;
-        margin-bottom: 16px !important;
-        border: 1px solid rgba(52, 211, 153, 0.3) !important;
-    }
-
     .price-row-box {
         background: rgba(15, 23, 42, 0.6) !important;
         padding: 16px 20px !important;
@@ -388,7 +376,6 @@ st.markdown(
         cursor: pointer !important;
     }
 
-    /* 🔥 BOZUK İKON YAZISINI GİZLEYEN STİL */
     div[data-testid="stExpander"] {
         background: rgba(15, 23, 42, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -509,6 +496,8 @@ if "user" not in st.session_state:
     st.session_state["user"] = {}
 if "secili" not in st.session_state:
     st.session_state["secili"] = None
+if "tamamlandi" not in st.session_state:
+    st.session_state["tamamlandi"] = False
 
 # --- GİRİŞ EKRANI ---
 if not st.session_state["auth"]:
@@ -664,6 +653,7 @@ else:
                         "bas_tarih": bas_tarih,
                         "bit_tarih": bit_tarih
                     }
+                    st.session_state["tamamlandi"] = False
                     st.rerun()
 
                 st.write("")
@@ -715,48 +705,62 @@ else:
                 unsafe_allow_html=True
             )
 
-            with st.form("kiralama_onay_formu"):
-                c_e1, c_e2 = st.columns(2)
-                with c_e1:
-                    ehliyet_no = st.text_input("Ehliyet Belge Seri No", placeholder="Örn: 123456")
-                with c_e2:
-                    ehliyet_sinif = st.selectbox("Ehliyet Sınıfı", ["B (Binek)", "B1", "A (Motosiklet)", "C (Kamyon)", "D (Otobüs)"])
+            # FORMU ÇALIŞTIRMA VE VERİ ALMA (HATA ENGELLEME DÜZENLEMESİ)
+            if not st.session_state["tamamlandi"]:
+                with st.form("kiralama_onay_formu"):
+                    c_e1, c_e2 = st.columns(2)
+                    with c_e1:
+                        ehliyet_no = st.text_input("Ehliyet Belge Seri No", placeholder="Örn: 123456")
+                    with c_e2:
+                        ehliyet_sinif = st.selectbox("Ehliyet Sınıfı", ["B (Binek)", "B1", "A (Motosiklet)", "C (Kamyon)", "D (Otobüs)"])
 
-                dosya = st.file_uploader("📷 Ehliyetinizin Ön Yüz Fotoğrafı (Zorunlu)", type=["jpg", "jpeg", "png"])
-                onay = st.form_submit_button("REZERVASYONU ONAYLA VE TAMAMLA ➔")
+                    dosya = st.file_uploader("📷 Ehliyetinizin Ön Yüz Fotoğrafı (Zorunlu)", type=["jpg", "jpeg", "png"])
+                    onay = st.form_submit_button("REZERVASYONU ONAYLA VE TAMAMLA ➔")
 
-                if onay:
-                    if ehliyet_no.strip() and dosya is not None:
-                        safe_car_name = re.sub(r"[^\w\-]", "_", s["ad"])
-                        ext = os.path.splitext(dosya.name)[1]
-                        foto_ad = f"{u['tc']}_{safe_car_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
-                        dosya_yolu = os.path.join(UPLOAD_DIR, foto_ad)
+                    if onay:
+                        if ehliyet_no.strip() and dosya is not None:
+                            safe_car_name = re.sub(r"[^\w\-]", "_", s["ad"])
+                            ext = os.path.splitext(dosya.name)[1]
+                            foto_ad = f"{u['tc']}_{safe_car_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
+                            dosya_yolu = os.path.join(UPLOAD_DIR, foto_ad)
 
-                        with open(dosya_yolu, "wb") as f:
-                            f.write(dosya.getbuffer())
+                            with open(dosya_yolu, "wb") as f:
+                                f.write(dosya.getbuffer())
 
-                        kaydet(
-                            "KİRALAMA",
-                            f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tarih: {s['bas_tarih'].strftime('%d.%m.%Y')}-{s['bit_tarih'].strftime('%d.%m.%Y')} | Tutar: {genel_toplam} ₺ | Ekler: {', '.join(secilen_ekler)} | Foto: {foto_ad}",
-                        )
+                            kaydet(
+                                "KİRALAMA",
+                                f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tarih: {s['bas_tarih'].strftime('%d.%m.%Y')}-{s['bit_tarih'].strftime('%d.%m.%Y')} | Tutar: {genel_toplam} ₺ | Ekler: {', '.join(secilen_ekler)} | Foto: {foto_ad}",
+                            )
 
-                        st.balloons()
-                        st.success(f"🎉 Tebrikler Sayın {u['ad']}! Rezervasyonunuz oluşturuldu.")
+                            # İşlem bilgilerini oturuma kaydet (Form dışına aktarma)
+                            st.session_state["tamamlandi"] = True
+                            st.session_state["son_rezervasyon"] = {
+                                "toplam": genel_toplam,
+                                "ekler": secilen_ekler
+                            }
+                            st.rerun()
+                        else:
+                            st.error("Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin.")
 
-                        # 📲 WHATSAPP BİLDİRİM LİNKİ
-                        wa_mesaj = f"Merhaba, ben {u['ad']}. {s['ad']} aracını {s['bas_tarih'].strftime('%d.%m.%Y')} tarihi için rezerve ettim. Toplam Tutar: {genel_toplam} TL."
-                        wa_link = f"https://wa.me/905000000000?text={re.sub(' ', '%20', wa_mesaj)}"
-                        st.markdown(f'<a href="{wa_link}" target="_blank" style="display:inline-block; background:#25D366; color:white; padding:12px 20px; border-radius:12px; font-weight:bold; text-decoration:none; margin-bottom:15px;">📲 WhatsApp İle Onay Bildirimi Gönder</a>', unsafe_allow_html=True)
+            # REZERVASYON TAMAMLANDIKTAN SONRA FORM DIŞINDA GÖSTERİLEN BÖLÜM (HATA VERMEZ)
+            if st.session_state["tamamlandi"]:
+                st.balloons()
+                st.success(f"🎉 Tebrikler Sayın {u['ad']}! Rezervasyonunuz başarıyla oluşturuldu.")
 
-                        # 📄 PDF FATURA İNDİRME BUTONU
-                        pdf_file = pdf_fatura_olustur(u['ad'], u['tc'], u['tel'], s['ad'], s['konum'], s['bas_tarih'], s['bit_tarih'], s['gun'], genel_toplam, secilen_ekler)
-                        st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
+                res_info = st.session_state["son_rezervasyon"]
 
-                    else:
-                        st.error("Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin.")
+                # 📲 WHATSAPP BİLDİRİM LİNKİ
+                wa_mesaj = f"Merhaba, ben {u['ad']}. {s['ad']} aracını {s['bas_tarih'].strftime('%d.%m.%Y')} tarihi için rezerve ettim. Toplam Tutar: {res_info['toplam']} TL."
+                wa_link = f"https://wa.me/905000000000?text={re.sub(' ', '%20', wa_mesaj)}"
+                st.markdown(f'<a href="{wa_link}" target="_blank" style="display:inline-block; background:#25D366; color:white; padding:12px 20px; border-radius:12px; font-weight:bold; text-decoration:none; margin-bottom:15px;">📲 WhatsApp İle Onay Bildirimi Gönder</a>', unsafe_allow_html=True)
+
+                # 📄 PDF FATURA İNDİRME BUTONU (FORM DIŞINDA SAF STREAMLIT BİLEŞENİ)
+                pdf_file = pdf_fatura_olustur(u['ad'], u['tc'], u['tel'], s['ad'], s['konum'], s['bas_tarih'], s['bit_tarih'], s['gun'], res_info['toplam'], res_info['ekler'])
+                st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
 
             if st.button("⬅️ Başka Araç Seç"):
                 st.session_state["secili"] = None
+                st.session_state["tamamlandi"] = False
                 st.rerun()
 
     with t2:
@@ -885,4 +889,5 @@ else:
             st.session_state["auth"] = False
             st.session_state["user"] = {}
             st.session_state["secili"] = None
+            st.session_state["tamamlandi"] = False
             st.rerun()

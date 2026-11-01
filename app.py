@@ -207,7 +207,7 @@ ARACLAR = [
     },
 ]
 
-# --- MODERN CSS TASARIMI ---
+# --- MODERN CSS TASARIMI (YAZI ÇAKIŞMALARI DÜZELTİLDİ) ---
 st.markdown(
     """
     <style>
@@ -345,11 +345,18 @@ st.markdown(
         cursor: pointer !important;
     }
 
+    /* EXPANDER BAŞLIK DÜZELTMESİ (ÇAKIŞMAYI ÖNLER) */
     div[data-testid="stExpander"] {
         background: rgba(15, 23, 42, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 14px !important;
         margin-bottom: 15px !important;
+    }
+    
+    div[data-testid="stExpander"] summary {
+        padding: 12px 16px !important;
+        font-weight: 700 !important;
+        color: #F8FAFC !important;
     }
 
     [data-testid="stDownloadButton"] > button {
@@ -593,8 +600,8 @@ else:
                 )
                 st.markdown(card_html, unsafe_allow_html=True)
 
-                # 🔍 DETAY EXPANDER (HATA VE YAZI ÇAKIŞMASI DÜZELTİLDİ)
-                with st.expander("Tüm Teknik ve Donanım Özelliklerini Gör"):
+                # 🔍 DETAY EXPANDER (SADELEŞTİRİLMİŞ BAŞLIK - ÇAKIŞMA TAMAMEN DÜZELTİLDİ)
+                with st.expander("Teknik Özellikler ve Donanımlar"):
                     st.markdown(
                         f"""
                         <div class="tech-grid">

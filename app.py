@@ -18,8 +18,9 @@ st.set_page_config(
 
 # --- SECRETS MANAGEMENT ---
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
-# WhatsApp mesajlarının gönderileceği yetkili/işletme numarası (Ülke kodu ile, başında + olmadan)
-YONETICI_WA_TEL = "905000000000" 
+
+# 📲 WHATSAPP BİLDİRİMİNİN GÖNDERİLECEĞİ NUMARA (531 765 34 20)
+YONETICI_WA_TEL = "905317653420" 
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
@@ -750,17 +751,17 @@ else:
 
                 res_info = st.session_state["son_rezervasyon"]
 
-                # 📲 PC'DE AÇIK OLAN WHATSAPP NUMARASINDAN BİLDİRİM GÖNDERME
+                # 📲 BİLGİSAYARDAKİ AÇIK WHATSAPP HESABINDAN METİN GÖNDERME
                 wa_mesaj = f"Merhaba, ben {u['ad']} ({u['tel']}). {s['ad']} aracını {s['bas_tarih'].strftime('%d.%m.%Y')} - {s['bit_tarih'].strftime('%d.%m.%Y')} tarihleri arasında {s['konum']} teslimatlı rezerve ettim. Toplam Tutar: {res_info['toplam']} TL."
                 
-                # wa.me link yapısı: Cihazdaki varsayılan WhatsApp/WhatsApp Web uygulamasını açar
+                # Belirlenen 531 765 34 20 numarasına WhatsApp üzerinden mesajı iletir
                 wa_link = f"https://wa.me/{YONETICI_WA_TEL}?text={re.sub(' ', '%20', wa_mesaj)}"
                 
                 st.markdown(
                     f'''
                     <a href="{wa_link}" target="_blank" style="text-decoration:none;">
                         <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; text-align: center; font-size: 16px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
-                            💬 WhatsApp İle Rezervasyon Detaylarını Gönder (Açık Hesaptan)
+                            💬 WhatsApp İle Rezervasyon Detaylarını Gönder (0531 765 34 20)
                         </div>
                     </a>
                     ''', 

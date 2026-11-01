@@ -1,13 +1,9 @@
 import os
 import re
 import io
-import hmac
 import sqlite3
-from contextlib import closing
-from urllib.parse import quote
 import pandas as pd
 import plotly.express as px
-import pydeck as pdk
 from datetime import datetime, timedelta
 import smtplib
 from email.message import EmailMessage
@@ -24,22 +20,9 @@ st.set_page_config(
 )
 
 # --- SECRETS MANAGEMENT & AYARLAR ---
-# Tüm gizli bilgiler .streamlit/secrets.toml dosyasından okunur.
-# Örnek dosya: .streamlit/secrets.toml.example
-def _secret(anahtar, varsayilan=""):
-    """st.secrets'tan değer okur; secrets dosyası yoksa varsayılanı döndürür."""
-    try:
-        return st.secrets.get(anahtar, varsayilan)
-    except Exception:
-        return varsayilan
-
-
-ADMIN_SIFRE_HAM = _secret("ADMIN_SIFRE", None)
-VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR = ADMIN_SIFRE_HAM is None
-ADMIN_SIFRE = ADMIN_SIFRE_HAM or "cihan123"          # secrets yoksa geçici varsayılan
-
-GMAIL_ADRES = _secret("demircicihan788@gmail.com", "")             # E-posta gönderecek şirket hesabı
-GMAIL_SIFRE = _secret("mjleglfzrcrxnmqb", "")             # Google Uygulama Şifresi (16 Haneli)
+ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
+GMAIL_ADRES = "sirket_epostaniz@gmail.com"  # E-posta gönderecek şirket hesabı
+GMAIL_SIFRE = "uygulama_sifresi_buraya"       # Google Uygulama Şifresi (16 Haneli)
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
@@ -52,36 +35,20 @@ if not os.path.exists(LOG_FILE):
         f.write("")
 
 # --- VERİTABANI (SQLite) BAŞLATMA ---
-def db_baglan():
-    """Her işlem için taze bir SQLite bağlantısı açar (tek global bağlantı yok)."""
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
-
-
-def db_oku(sorgu, parametreler=None):
-    """SELECT sorgusu çalıştırıp DataFrame döndürür (parametreli, enjeksiyona kapalı)."""
-    with closing(db_baglan()) as conn:
-        return pd.read_sql_query(sorgu, conn, params=parametreler)
-
-
-def db_calistir(sorgu, parametreler=()):
-    """INSERT/UPDATE/DELETE çalıştırır, commit eder ve lastrowid döndürür."""
-    with closing(db_baglan()) as conn, conn:
-        cur = conn.execute(sorgu, parametreler)
-        return cur.lastrowid
-
-
 def init_db():
-    with closing(db_baglan()) as conn, conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS kiralamalar 
-                     (id INTEGER PRIMARY KEY AUTOINCREMENT, tc TEXT, ad TEXT, tel TEXT, email TEXT, 
-                     arac TEXT, konum TEXT, bas_tarih DATE, bit_tarih DATE, gun INTEGER, 
-                     toplam_tutar REAL, durum TEXT, olusturma_tarihi DATETIME)''')
-        conn.execute('''CREATE TABLE IF NOT EXISTS iadeler 
-                     (id INTEGER PRIMARY KEY AUTOINCREMENT, kiralama_id INTEGER, 
-                     km INTEGER, hasar_durumu TEXT, notlar TEXT, foto_yolu TEXT)''')
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS kiralamalar 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, tc TEXT, ad TEXT, tel TEXT, email TEXT, 
+                 arac TEXT, konum TEXT, bas_tarih DATE, bit_tarih DATE, gun INTEGER, 
+                 toplam_tutar REAL, durum TEXT, olusturma_tarihi DATETIME)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS iadeler 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, kiralama_id INTEGER, 
+                 km INTEGER, hasar_durumu TEXT, notlar TEXT, foto_yolu TEXT)''')
+    conn.commit()
+    return conn, c
 
-
-init_db()
+conn, c = init_db()
 
 # --- HARİTA KOORDİNATLARI ---
 LOKASYONLAR = {
@@ -109,14 +76,11 @@ def tr_duzelt(metin):
 
 # --- GERÇEK ZAMANLI MÜSAİTLİK KONTROLÜ ---
 def araba_musait_mi(arac_ad, bas_tarih, bit_tarih):
-    with closing(db_baglan()) as conn:
-        satirlar = conn.execute('''SELECT id FROM kiralamalar 
-                                   WHERE arac = ? AND durum = 'Aktif' 
-                                   AND (? <= bit_tarih AND ? >= bas_tarih)''',
-                                (arac_ad,
-                                 bas_tarih.strftime("%Y-%m-%d"),
-                                 bit_tarih.strftime("%Y-%m-%d"))).fetchall()
-    return len(satirlar) == 0
+    c.execute('''SELECT id FROM kiralamalar 
+                 WHERE arac = ? AND durum = 'Aktif' 
+                 AND (? <= bit_tarih AND ? >= bas_tarih)''', 
+              (arac_ad, bas_tarih.strftime("%Y-%m-%d"), bit_tarih.strftime("%Y-%m-%d")))
+    return len(c.fetchall()) == 0
 
 # --- PDF FATURA OLUŞTURMA FONKSİYONU ---
 def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih, gun, toplam_tutar, ekler):
@@ -153,14 +117,11 @@ def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih
     
     p.showPage()
     p.save()
-    return buffer.getvalue()
+    buffer.seek(0)
+    return buffer
 
 # --- E-POSTA GÖNDERİM FONKSİYONU ---
-def eposta_gonder(alici_email, pdf_bytes, musteri_adi):
-    """E-postayı gönderir. (basarili: bool, hata_mesaji: str) döndürür."""
-    if not GMAIL_ADRES or not GMAIL_SIFRE:
-        return False, ("E-posta ayarları eksik: GMAIL_ADRES ve GMAIL_SIFRE "
-                       "değerlerini .streamlit/secrets.toml dosyasına ekleyin.")
+def eposta_gonder(alici_email, pdf_buffer, musteri_adi):
     try:
         msg = EmailMessage()
         msg['Subject'] = 'DriveNow Premium - Rezervasyon Faturanız'
@@ -168,14 +129,15 @@ def eposta_gonder(alici_email, pdf_bytes, musteri_adi):
         msg['To'] = alici_email
         msg.set_content(f"Merhaba {musteri_adi},\n\nRezervasyonunuz basariyla onaylanmistir. Fatura ve kiralama detaylariniz ekteki PDF dosyasinda yer almaktadir.\n\nIyi yolculuklar dileriz.")
         
-        msg.add_attachment(pdf_bytes, maintype='application', subtype='pdf', filename='DriveNow_Fatura.pdf')
+        pdf_data = pdf_buffer.read()
+        msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename='DriveNow_Fatura.pdf')
         
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=20) as smtp:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(GMAIL_ADRES, GMAIL_SIFRE)
             smtp.send_message(msg)
-        return True, ""
+        return True
     except Exception as e:
-        return False, f"{type(e).__name__}: {e}"
+        return False
 
 # --- ARAÇ FİLOSU ---
 ARACLAR = [
@@ -189,7 +151,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "440 Lt",
         "badge": "🛣️ UYGUN & MUKAVEMETLİ",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Fiat_Tipo_Sedan_Facelift_Leonberg_2022_1X7A0412.jpg/960px-Fiat_Tipo_Sedan_Facelift_Leonberg_2022_1X7A0412.jpg",
         "motor": "1.3 MultiJet II (95 HP / 200 Nm)",
         "sanziman": "5 İleri Manuel",
         "tuketim": "4.4 Lt / 100km",
@@ -208,7 +169,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "391 Lt",
         "badge": "💡 ŞEHİR DOSTU",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3b/Renault_Clio_%28V%2C_Facelift%29_%E2%80%93_f_02092025.jpg/330px-Renault_Clio_%28V%2C_Facelift%29_%E2%80%93_f_02092025.jpg",
         "motor": "1.0 TCe Turbo (90 HP / 160 Nm)",
         "sanziman": "6 İleri Manuel",
         "tuketim": "5.0 Lt / 100km",
@@ -227,7 +187,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "392 Lt",
         "badge": "🌟 AİLE DOSTU",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/2018_Ford_Focus_ST-Line_X_1.0.jpg/330px-2018_Ford_Focus_ST-Line_X_1.0.jpg",
         "motor": "1.5 Ti-VCT Ecoboost (123 HP / 153 Nm)",
         "sanziman": "6 İleri Tam Otomatik",
         "tuketim": "6.2 Lt / 100km",
@@ -246,7 +205,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "615 Lt",
         "badge": "🏕️ PREMİUM SUV",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Volkswagen_Tiguan_III_IMG_8823_%28cropped%29.jpg/330px-Volkswagen_Tiguan_III_IMG_8823_%28cropped%29.jpg",
         "motor": "1.5 TSI ACT (150 HP / 250 Nm)",
         "sanziman": "7 İleri DSG Otomatik",
         "tuketim": "5.7 Lt / 100km",
@@ -265,7 +223,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "487 Lt",
         "badge": "🔥 EN ÇOK TERCİH EDİLEN",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/01/2019_Peugeot_508_GT-Line_BlueHDi_1.5_%28130_PS%29_Front.jpg/330px-2019_Peugeot_508_GT-Line_BlueHDi_1.5_%28130_PS%29_Front.jpg",
         "motor": "1.5 BlueHDi (130 HP / 300 Nm Torque)",
         "sanziman": "8 İleri Tam Otomatik EAT8",
         "tuketim": "4.1 Lt / 100km",
@@ -284,7 +241,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "561 Lt",
         "badge": "⚡ TEKNOLOJİ HARİKASI",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Tesla_Model_3_%282023%29_Autofr%C3%BChling_Ulm_IMG_9282.jpg/330px-Tesla_Model_3_%282023%29_Autofr%C3%BChling_Ulm_IMG_9282.jpg",
         "motor": "Dual Motor AWD (510 HP / 660 Nm Torque)",
         "sanziman": "Tek Vitesli Otomatik Direct Drive",
         "tuketim": "14.4 kWh / 100km (Menzil: 528 km)",
@@ -303,7 +259,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "470 Lt",
         "badge": "💎 PREMİUM SPOR",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/2020_BMW_420i_Sport_Automatic_2.0.jpg/330px-2020_BMW_420i_Sport_Automatic_2.0.jpg",
         "motor": "2.0 BMW TwinPower Turbo (170 HP / 250 Nm)",
         "sanziman": "8 İleri Steptronic Spor Otomatik",
         "tuketim": "6.6 Lt / 100km",
@@ -322,7 +277,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "455 Lt",
         "badge": "👑 KONFORUN SİMGESİ",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Mercedes-Benz_W206_IMG_5796.jpg/330px-Mercedes-Benz_W206_IMG_5796.jpg",
         "motor": "1.5 Mild-Hybrid Turbo (204 HP + 20 HP EQ)",
         "sanziman": "9G-TRONIC Otomatik",
         "tuketim": "6.4 Lt / 100km",
@@ -341,7 +295,6 @@ ARACLAR = [
         "koltuk": "4 Koltuk",
         "bagaj": "370 Lt",
         "badge": "☀️ ÜSTÜ AÇIK LÜKS",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/Audi_A5_B10_DSC_7314.jpg/330px-Audi_A5_B10_DSC_7314.jpg",
         "motor": "2.0 40 TFSI Mild-Hybrid (204 HP / 320 Nm)",
         "sanziman": "7 İleri S tronic Otomatik",
         "tuketim": "6.3 Lt / 100km",
@@ -360,7 +313,6 @@ ARACLAR = [
         "koltuk": "5 Koltuk",
         "bagaj": "488 Lt",
         "badge": "🏎️ ULTRA PERFORMANS",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Porsche_Macan_4_IMG_2153.jpg/330px-Porsche_Macan_4_IMG_2153.jpg",
         "motor": "2.9 V6 Twin-Turbo (440 HP / 550 Nm)",
         "sanziman": "7 İleri PDK Çift Kavrama",
         "tuketim": "9.9 Lt / 100km",
@@ -388,16 +340,7 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", Roboto, sans-serif !important;
     }
 
-    /* Material ikonlarının fontunu geri ver (yoksa "upload", "expand_more" gibi düz metin çıkar) */
-    span[data-testid="stIconMaterial"],
-    span.material-symbols-rounded,
-    span.material-icons {
-        font-family: "Material Symbols Rounded", "Material Icons" !important;
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
-        color: inherit !important;
-    }
-
-    .search-card, .st-key-arama_karti {
+    .search-card {
         background: rgba(30, 41, 59, 0.7) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
@@ -421,51 +364,6 @@ st.markdown(
     .car-card-detailed:hover {
         border-color: rgba(99, 102, 241, 0.5) !important;
         transform: translateY(-2px);
-    }
-
-    /* Araç görseli: kartın sağ yanında */
-    .car-card-row {
-        display: flex !important;
-        gap: 18px !important;
-        align-items: flex-start !important;
-        flex-wrap: wrap !important;
-    }
-    .car-card-main {
-        flex: 1 1 260px !important;
-        min-width: 0 !important;
-    }
-    .car-image-box {
-        position: relative !important;
-        flex: 0 0 190px !important;
-        width: 190px !important;
-        height: 126px !important;
-        border-radius: 18px !important;
-        overflow: hidden !important;
-        background: linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 34px !important;
-    }
-    .car-image-box img {
-        position: absolute !important;
-        inset: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;
-        transition: transform 0.4s ease !important;
-    }
-    .car-card-detailed:hover .car-image-box img {
-        transform: scale(1.07) !important;
-    }
-    @media (max-width: 720px) {
-        .car-image-box {
-            flex: 1 1 100% !important;
-            width: 100% !important;
-            height: 180px !important;
-        }
     }
 
     .badge-highlight {
@@ -591,143 +489,6 @@ st.markdown(
         -webkit-text-fill-color: #F8FAFC !important;
     }
 
-    /* --- TARİH ALANI (Alış / İade Tarihi) --- */
-    div[data-testid="stDateInputField"] {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-    div[data-testid="stDateInputField"] *,
-    div[data-testid="stDateInputField"] input,
-    div[data-testid="stDateInputField"] span {
-        background-color: transparent !important;
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-        opacity: 1 !important;
-    }
-    div[data-testid="stDateInputField"] input::placeholder {
-        color: #94A3B8 !important;
-        -webkit-text-fill-color: #94A3B8 !important;
-        opacity: 1 !important;
-    }
-    div[data-testid="stDateInputCalendarButton"],
-    div[data-testid="stDateInputCalendarButton"] svg {
-        color: #93C5FD !important;
-        fill: #93C5FD !important;
-        opacity: 1 !important;
-    }
-
-    /* Takvim açılır penceresi */
-    div[data-testid="stDateInputCalendar"] {
-        background-color: #1E293B !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 16px !important;
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5) !important;
-    }
-    div[data-testid="stDateInputCalendar"] * {
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-    }
-    div[data-testid="stDateInputCalendar"] td[aria-selected="true"],
-    div[data-testid="stDateInputCalendar"] [aria-selected="true"] {
-        background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%) !important;
-        border-radius: 10px !important;
-    }
-    div[data-testid="stDateInputCalendar"] td:hover {
-        background-color: rgba(255, 255, 255, 0.08) !important;
-        border-radius: 10px !important;
-    }
-
-    /* --- SEÇİM KUTULARI (Teslimat Noktası / Vites Tipi) --- */
-    div[data-testid="stSelectbox"] [role="group"] {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-    div[data-testid="stSelectbox"] input,
-    div[data-testid="stSelectbox"] input::placeholder {
-        background-color: transparent !important;
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-    }
-    div[data-testid="stSelectbox"] svg {
-        color: #93C5FD !important;
-        fill: #93C5FD !important;
-    }
-
-    /* --- ÜST BAŞLIK VE ELEMENT ARAÇ ÇUBUĞU --- */
-    header[data-testid="stHeader"], div[data-testid="stAppHeader"] {
-        background: transparent !important;
-    }
-    div[data-testid="stElementToolbarButtonContainer"] {
-        background-color: rgba(30, 41, 59, 0.9) !important;
-        border-radius: 8px !important;
-    }
-
-    /* --- METİN / SAYI GİRİŞ KUTULARI --- */
-    div[data-testid="stTextInputRootElement"],
-    div[data-testid="stNumberInputRootElement"] {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-
-    /* --- ÇOK SATIRLI METİN (Yorum) --- */
-    div[data-testid="stTextAreaRootElement"],
-    div[data-testid="stTextAreaRootElement"] textarea {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-    div[data-testid="stTextAreaRootElement"] textarea::placeholder {
-        color: #94A3B8 !important;
-        -webkit-text-fill-color: #94A3B8 !important;
-    }
-
-    /* --- VERİ TABLOSU --- */
-    div[data-testid="stDataFrame"] {
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        border-radius: 14px !important;
-        overflow: hidden !important;
-    }
-
-    /* --- DOSYA YÜKLEME ALANI --- */
-    section[data-testid="stFileUploaderDropzone"] {
-        background-color: rgba(15, 23, 42, 0.6) !important;
-        border: 1.5px dashed rgba(147, 197, 253, 0.35) !important;
-        border-radius: 16px !important;
-    }
-    section[data-testid="stFileUploaderDropzone"] div,
-    section[data-testid="stFileUploaderDropzone"] span,
-    section[data-testid="stFileUploaderDropzone"] small,
-    section[data-testid="stFileUploaderDropzone"] p {
-        color: #CBD5E1 !important;
-        -webkit-text-fill-color: #CBD5E1 !important;
-    }
-    section[data-testid="stFileUploaderDropzone"] svg {
-        fill: #93C5FD !important;
-        color: #93C5FD !important;
-    }
-    section[data-testid="stFileUploaderDropzone"] button {
-        background: rgba(147, 197, 253, 0.15) !important;
-        border: 1px solid rgba(147, 197, 253, 0.4) !important;
-        border-radius: 10px !important;
-        color: #93C5FD !important;
-        -webkit-text-fill-color: #93C5FD !important;
-        height: auto !important;
-        width: auto !important;
-        min-height: 0 !important;
-        box-shadow: none !important;
-        padding: 8px 16px !important;
-        font-size: 13px !important;
-    }
-    section[data-testid="stFileUploaderDropzone"] button * {
-        color: #93C5FD !important;
-        -webkit-text-fill-color: #93C5FD !important;
-    }
-
     div[data-baseweb="popover"], div[data-baseweb="popover"] * {
         background-color: #1E293B !important;
         color: #F8FAFC !important;
@@ -851,53 +612,36 @@ else:
     with t1:
         if st.session_state["secili"] is None:
             # 🔍 ARAMA & TARİH SEÇİM PANELİ
-            with st.container(key="arama_karti"):
-                st.markdown(f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>", unsafe_allow_html=True)
+            st.markdown('<div class="search-card">', unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>", unsafe_allow_html=True)
 
-                c_loc, c_vites = st.columns([2, 1.5])
-                with c_loc:
-                    konum = st.selectbox("📍 Teslimat Noktası", list(LOKASYONLAR.keys()))
-                with c_vites:
-                    vites_filtre = st.selectbox("🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
+            c_loc, c_vites = st.columns([2, 1.5])
+            with c_loc:
+                konum = st.selectbox("📍 Teslimat Noktası", list(LOKASYONLAR.keys()))
+            with c_vites:
+                vites_filtre = st.selectbox("🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
 
-                # 🗺️ HARİTA ENTEGRASYONU (Seçilen Teslimat Noktasını Gösterir)
-                # Koyu tema st.map'in altlık haritasını kararttığı için açık stilli pydeck kullanılıyor.
-                if konum in LOKASYONLAR:
-                    enlem, boylam = LOKASYONLAR[konum]
-                    df_map = pd.DataFrame([{"lat": enlem, "lon": boylam}])
-                    harita = pdk.Deck(
-                        map_style="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
-                        initial_view_state=pdk.ViewState(latitude=enlem, longitude=boylam, zoom=12, pitch=0),
-                        layers=[
-                            pdk.Layer(
-                                "ScatterplotLayer",
-                                data=df_map,
-                                get_position="[lon, lat]",
-                                get_radius=250,
-                                get_fill_color=[255, 107, 0, 200],
-                                get_line_color=[255, 255, 255],
-                                line_width_min_pixels=2,
-                                pickable=False,
-                            )
-                        ],
-                        tooltip=False,
-                    )
-                    st.pydeck_chart(harita, width="stretch")
-                    st.caption(f"📍 Haritada seçili nokta: {konum}")
+            # 🗺️ HARİTA ENTEGRASYONU (Tüm Teslimat Noktalarını Gösterir)
+            if LOKASYONLAR:
+                map_data = [{"lat": coords[0], "lon": coords[1]} for coords in LOKASYONLAR.values()]
+                df_map = pd.DataFrame(map_data)
+                st.map(df_map, zoom=6, use_container_width=True)
 
-                # 📅 TARİH ARALIĞI SEÇİMİ
-                c_t1, c_t2 = st.columns(2)
-                with c_t1:
-                    bas_tarih = st.date_input("📅 Alış Tarihi", datetime.now() + timedelta(days=1))
-                with c_t2:
-                    bit_tarih = st.date_input("📅 İade Tarihi", datetime.now() + timedelta(days=2))
+            # 📅 TARİH ARALIĞI SEÇİMİ
+            c_t1, c_t2 = st.columns(2)
+            with c_t1:
+                bas_tarih = st.date_input("📅 Alış Tarihi", datetime.now() + timedelta(days=1))
+            with c_t2:
+                bit_tarih = st.date_input("📅 İade Tarihi", datetime.now() + timedelta(days=2))
 
-                gun = (bit_tarih - bas_tarih).days
-                if gun <= 0:
-                    st.error("⚠️ İade tarihi alış tarihinden sonra olmalıdır!")
-                    gun = 1
-                else:
-                    st.info(f"⏱️ Toplam Kiralama Süresi: **{gun} Gün**")
+            gun = (bit_tarih - bas_tarih).days
+            if gun <= 0:
+                st.error("⚠️ İade tarihi alış tarihinden sonra olmalıdır!")
+                gun = 1
+            else:
+                st.info(f"⏱️ Toplam Kiralama Süresi: **{gun} Gün**")
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # Dinamik İndirim Algoritması (7 gün ve üzeri kiralamalara %15 indirim)
             indirim_orani = 0.85 if gun >= 7 else 1.0
@@ -906,15 +650,12 @@ else:
 
             # 🚗 ARAÇ LİSTESİ VE GERÇEK ZAMANLI MÜSAİTLİK
             musait_sayisi = 0
-            filtre_sayisi = 0
             for a in ARACLAR:
                 if vites_filtre != "Tümü" and a["vites"] != vites_filtre:
                     continue
 
-                filtre_sayisi += 1
+                musait_sayisi += 1
                 musait_mi = araba_musait_mi(a["ad"], bas_tarih, bit_tarih)
-                if musait_mi:
-                    musait_sayisi += 1
                 gunluk_fiyat = a["fiyat"] * indirim_orani
                 toplam_tutar = gunluk_fiyat * gun
 
@@ -923,8 +664,6 @@ else:
 
                 card_html = (
                     f'<div class="car-card-detailed">'
-                    f'<div class="car-card-row">'
-                    f'<div class="car-card-main">'
                     f'<div>'
                     f'<span class="badge-highlight">{a["badge"]}</span>'
                     f'<span style="background:rgba(251, 191, 36, 0.2); color:#FBBF24; font-size:12px; font-weight:900; padding:4px 10px; border-radius:10px; float:right; border: 1px solid rgba(251, 191, 36, 0.3);">★ {a["puan"]}</span>'
@@ -948,12 +687,6 @@ else:
                     f'<div style="text-align:right;">'
                     f'<div style="font-size:10px; font-weight:800; color:#94A3B8;">{gun} GÜNLÜK TOPLAM</div>'
                     f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{toplam_tutar:,.0f} ₺</div>'
-                    f'</div>'
-                    f'</div>'
-                    f'</div>'
-                    f'<div class="car-image-box">'
-                    f'<span>🚗</span>'
-                    f'<img src="{a.get("gorsel", "")}" alt="{a["ad"]}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">'
                     f'</div>'
                     f'</div>'
                     f'</div>'
@@ -983,7 +716,6 @@ else:
                         st.session_state["secili"] = {
                             "ad": a["ad"],
                             "kat": a["kat"],
-                            "gorsel": a.get("gorsel", ""),
                             "fiyat": gunluk_fiyat,
                             "toplam": toplam_tutar,
                             "gun": gun,
@@ -996,12 +728,8 @@ else:
 
                 st.write("")
 
-            if filtre_sayisi == 0:
+            if musait_sayisi == 0:
                 st.warning("Seçilen vites tipine uygun araç bulunamadı.")
-            elif musait_sayisi == 0:
-                st.warning("Seçilen tarihlerde uygun araç bulunmuyor. Lütfen farklı tarihler deneyin.")
-
-            st.caption("🖼️ Araç görselleri temsilîdir (kaynak: Wikimedia Commons). Ticari kullanımda kendi filo fotoğraflarınızla değiştirin.")
 
         else:
             # 🔒 REZERVE, KUPON VE EKSTRA HİZMETLER
@@ -1012,17 +740,9 @@ else:
 
             summary_html = (
                 f'<div class="car-card-detailed" style="border-left: 6px solid #38BDF8 !important;">'
-                f'<div class="car-card-row">'
-                f'<div class="car-card-main">'
                 f'<div style="font-size:12px; font-weight:900; color:#38BDF8;">SEÇTİĞİNİZ ARAÇ ÖZETİ</div>'
                 f'<div style="font-size:26px; font-weight:900; margin:4px 0;">{s["ad"]}</div>'
                 f'<div style="font-size:14px; color:#94A3B8; font-weight:700;">📍 {s["konum"]} | ⏱ {s["gun"]} Gün ({s["bas_tarih"].strftime("%d.%m.%Y")} - {s["bit_tarih"].strftime("%d.%m.%Y")})</div>'
-                f'</div>'
-                f'<div class="car-image-box" style="flex:0 0 150px !important; width:150px !important; height:100px !important;">'
-                f'<span>🚗</span>'
-                f'<img src="{s.get("gorsel", "")}" alt="{s["ad"]}" referrerpolicy="no-referrer" onerror="this.remove()">'
-                f'</div>'
-                f'</div>'
                 f'</div>'
             )
             st.markdown(summary_html, unsafe_allow_html=True)
@@ -1089,12 +809,13 @@ else:
                             )
 
                             # SQLite Veritabanına Kaydet
-                            db_calistir('''INSERT INTO kiralamalar 
+                            c.execute('''INSERT INTO kiralamalar 
                                          (tc, ad, tel, email, arac, konum, bas_tarih, bit_tarih, gun, toplam_tutar, durum, olusturma_tarihi) 
                                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
-                                        (u["tc"], u["ad"], u["tel"], u["email"], s["ad"], s["konum"],
-                                         s["bas_tarih"].strftime("%Y-%m-%d"), s["bit_tarih"].strftime("%Y-%m-%d"),
-                                         s["gun"], genel_toplam, "Aktif", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                                      (u["tc"], u["ad"], u["tel"], u["email"], s["ad"], s["konum"], 
+                                       s["bas_tarih"].strftime("%Y-%m-%d"), s["bit_tarih"].strftime("%Y-%m-%d"), 
+                                       s["gun"], genel_toplam, "Aktif", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                            conn.commit()
 
                             st.session_state["tamamlandi"] = True
                             st.session_state["son_rezervasyon"] = {
@@ -1112,30 +833,18 @@ else:
 
                 res_info = st.session_state["son_rezervasyon"]
 
-                # 📄 PDF FATURA + 📧 E-POSTA (yalnızca bir kez üretilip gönderilir)
-                if "fatura_pdf" not in st.session_state:
-                    st.session_state["fatura_pdf"] = pdf_fatura_olustur(
-                        u['ad'], u['tc'], u['tel'], s['ad'], s['konum'],
-                        s['bas_tarih'], s['bit_tarih'], s['gun'],
-                        res_info['toplam'], res_info['ekler']
-                    )
-                    st.session_state["eposta_sonuc"] = eposta_gonder(
-                        u['email'], st.session_state["fatura_pdf"], u['ad']
-                    )
+                # 📄 PDF FATURA OLUŞTURMA
+                pdf_file = pdf_fatura_olustur(u['ad'], u['tc'], u['tel'], s['ad'], s['konum'], s['bas_tarih'], s['bit_tarih'], s['gun'], res_info['toplam'], res_info['ekler'])
 
-                pdf_file = st.session_state["fatura_pdf"]
-                eposta_basarili, eposta_hata = st.session_state["eposta_sonuc"]
-
-                if eposta_basarili:
+                # 📧 E-POSTA İLE FATURA GÖNDERİMİ
+                if eposta_gonder(u['email'], pdf_file, u['ad']):
                     st.info(f"📧 Rezervasyon faturanız başarıyla {u['email']} adresine gönderildi.")
                 else:
-                    st.warning(f"⚠️ E-posta gönderilemedi: {eposta_hata}")
+                    st.warning("⚠️ E-posta gönderilemedi. Lütfen kod içerisindeki Gmail ayarlarınızı kontrol edin.")
 
                 st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
 
             if st.button("⬅️ Başka Araç Seç"):
-                st.session_state["fatura_pdf"] = None
-                st.session_state["eposta_sonuc"] = None
                 st.session_state["secili"] = None
                 st.session_state["tamamlandi"] = False
                 st.rerun()
@@ -1145,14 +854,10 @@ else:
         u_ad = st.session_state["user"]["ad"]
         u_tc = st.session_state["user"]["tc"]
 
-        # SQLite üzerinden geçmiş kayıtları çekme (parametreli sorgu)
-        df_gecmis = db_oku(
-            "SELECT arac, konum, bas_tarih, bit_tarih, toplam_tutar, durum "
-            "FROM kiralamalar WHERE tc = ? ORDER BY bas_tarih DESC",
-            (u_tc,),
-        )
+        # SQLite üzerinden geçmiş kayıtları çekme
+        df_gecmis = pd.read_sql_query(f"SELECT arac, konum, bas_tarih, bit_tarih, toplam_tutar, durum FROM kiralamalar WHERE tc = '{u_tc}'", conn)
         if not df_gecmis.empty:
-            st.dataframe(df_gecmis, width="stretch")
+            st.dataframe(df_gecmis, use_container_width=True)
         else:
             st.info("Henüz sistemde kiralama kaydınız bulunmuyor.")
 
@@ -1198,51 +903,43 @@ else:
         lock = st.checkbox("🔒 Yönetici Paneli Girişi")
         if lock:
             sifre = st.text_input("Admin Şifresi", type="password")
-            if ADMIN_SIFRE and hmac.compare_digest(sifre, ADMIN_SIFRE):
+            if sifre == ADMIN_SIFRE:
                 st.success("Yetkili Girişi Onaylandı.")
-                if VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR:
-                    st.warning("Varsayılan admin şifresi kullanılıyor. Güvenlik için `ADMIN_SIFRE` değerini `.streamlit/secrets.toml` dosyasına ekleyin.")
 
                 # 📲 YÖNETİCİ KONTROLLÜ WHATSAPP ONAY MERKEZİ
                 st.markdown("<b>📱 Admin WhatsApp Onay Merkezi</b>", unsafe_allow_html=True)
-                bekleyen_rez = db_oku(
-                    "SELECT id, ad, tel, arac, bas_tarih, bit_tarih, toplam_tutar "
-                    "FROM kiralamalar WHERE durum = 'Aktif' ORDER BY id"
-                )
+                bekleyen_rez = pd.read_sql_query("SELECT id, ad, tel, arac, bas_tarih, bit_tarih, toplam_tutar FROM kiralamalar WHERE durum='Aktif'", conn)
                 
                 if not bekleyen_rez.empty:
-                    etiketler = {
-                        int(r["id"]): f"ID:{r['id']} - {r['ad']} ({r['arac']}) - {r['toplam_tutar']:,.0f} TL"
-                        for _, r in bekleyen_rez.iterrows()
-                    }
-                    secilen_id = st.selectbox(
-                        "Onay Mesajı Gönderilecek Rezervasyon",
-                        list(etiketler),
-                        format_func=lambda i: etiketler[i],
+                    secilen_rez = st.selectbox(
+                        "Onay Mesajı Gönderilecek Rezervasyon", 
+                        bekleyen_rez.apply(lambda x: f"ID:{x['id']} - {x['ad']} ({x['arac']}) - {x['toplam_tutar']:,.0f} TL", axis=1).tolist()
                     )
-
-                    secilen_kayit = bekleyen_rez[bekleyen_rez['id'] == secilen_id].iloc[0]
-
-                    musteri_tel = f"90{secilen_kayit['tel']}"
-                    wa_mesaj = tr_duzelt(f"Sayin {secilen_kayit['ad']}, DriveNow uzerinden {secilen_kayit['arac']} araci icin yaptiginiz rezervasyon onaylanmistir. Tarihler: {secilen_kayit['bas_tarih']} / {secilen_kayit['bit_tarih']}. Tutar: {secilen_kayit['toplam_tutar']:,.0f} TL. Iyi yolculuklar dileriz!")
-                    wa_link = f"https://wa.me/{musteri_tel}?text={quote(wa_mesaj)}"
-
-                    st.markdown(
-                        f'''
-                        <a href="{wa_link}" target="_blank" style="text-decoration:none;">
-                            <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; text-align: center; font-size: 16px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
-                                💬 Müşteriye WhatsApp Onay Linkini Aç ({secilen_kayit['ad']})
-                            </div>
-                        </a>
-                        ''', 
-                        unsafe_allow_html=True
-                    )
+                    
+                    if secilen_rez:
+                        r_id = secilen_rez.split(" - ")[0].replace("ID:", "")
+                        secilen_kayit = bekleyen_rez[bekleyen_rez['id'] == int(r_id)].iloc[0]
+                        
+                        musteri_tel = f"90{secilen_kayit['tel']}"
+                        wa_mesaj = tr_duzelt(f"Sayin {secilen_kayit['ad']}, DriveNow uzerinden {secilen_kayit['arac']} araci icin yaptiginiz rezervasyon onaylanmistir. Tarihler: {secilen_kayit['bas_tarih']} / {secilen_kayit['bit_tarih']}. Tutar: {secilen_kayit['toplam_tutar']:,.0f} TL. Iyi yolculuklar dileriz!")
+                        wa_link = f"https://wa.me/{musteri_tel}?text={re.sub(' ', '%20', wa_mesaj)}"
+                        
+                        st.markdown(
+                            f'''
+                            <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                                <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; text-align: center; font-size: 16px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
+                                    💬 Müşteriye WhatsApp Onay Linkini Aç ({secilen_kayit['ad']})
+                                </div>
+                            </a>
+                            ''', 
+                            unsafe_allow_html=True
+                        )
                 else:
                     st.info("Onay bekleyen aktif kiralama bulunmuyor.")
 
                 # 📊 GRAFİK VE CİRO ANALİZİ
                 st.markdown("<b>📊 Ciro ve Performans Analizi</b>", unsafe_allow_html=True)
-                df_analiz = db_oku("SELECT * FROM kiralamalar")
+                df_analiz = pd.read_sql_query("SELECT * FROM kiralamalar", conn)
                 if not df_analiz.empty:
                     toplam_ciro = df_analiz['toplam_tutar'].sum()
                     aktif_sayisi = len(df_analiz[df_analiz['durum'] == 'Aktif'])
@@ -1251,24 +948,16 @@ else:
                     c_m1.metric("Toplam Tahsilat / Ciro", f"{toplam_ciro:,.0f} TL")
                     c_m2.metric("Aktif Kiralama Sayısı", aktif_sayisi)
 
-                    fig = px.pie(df_analiz, names='arac', title="Araç Bazlı Kiralama Dağılımı", hole=0.4, template="plotly_dark")
-                    st.plotly_chart(fig, width="stretch")
+                    fig = px.pie(df_analiz, names='arac', title="Araç Bazlı Kiralama Dağılımı", hole=0.4)
+                    st.plotly_chart(fig, use_container_width=True)
 
                 # 🛠️ ARAÇ İADE (CHECK-OUT) VE HASAR KAYDI
                 st.markdown("<b>🛠️ Araç İade & Hasar Yönetimi</b>", unsafe_allow_html=True)
-                aktifler = db_oku("SELECT id, tc, ad, arac FROM kiralamalar WHERE durum = 'Aktif' ORDER BY id")
+                aktifler = pd.read_sql_query("SELECT id, tc, ad, arac FROM kiralamalar WHERE durum='Aktif'", conn)
                 
                 if not aktifler.empty:
-                    iade_etiketler = {
-                        int(r["id"]): f"{r['id']} - {r['ad']} - {r['arac']}"
-                        for _, r in aktifler.iterrows()
-                    }
-                    k_id = st.selectbox(
-                        "İade Alınacak İşlem (ID - Müşteri - Araç)",
-                        list(iade_etiketler),
-                        format_func=lambda i: iade_etiketler[i],
-                        key="iade_select",
-                    )
+                    secilen_iade_id = st.selectbox("İade Alınacak İşlem (ID - Müşteri - Araç)", aktifler.apply(lambda x: f"{x['id']} - {x['ad']} - {x['arac']}", axis=1).tolist(), key="iade_select")
+                    k_id = secilen_iade_id.split(" - ")[0]
                     
                     with st.form("iade_formu"):
                         km = st.number_input("Dönüş Kilometresi", min_value=0, step=100)
@@ -1276,10 +965,10 @@ else:
                         notlar = st.text_area("Yönetici Notları")
                         
                         if st.form_submit_button("İadeyi Tamamla ve Aracı Filoya Tekrar Müsait Yap"):
-                            with closing(db_baglan()) as conn, conn:
-                                conn.execute("UPDATE kiralamalar SET durum = 'Tamamlandı' WHERE id = ?", (k_id,))
-                                conn.execute("INSERT INTO iadeler (kiralama_id, km, hasar_durumu, notlar, foto_yolu) VALUES (?,?,?,?,?)",
-                                             (k_id, km, hasar_durum, notlar, "Yok"))
+                            c.execute("UPDATE kiralamalar SET durum = 'Tamamlandı' WHERE id = ?", (k_id,))
+                            c.execute("INSERT INTO iadeler (kiralama_id, km, hasar_durumu, notlar, foto_yolu) VALUES (?,?,?,?,?)", 
+                                      (k_id, km, hasar_durum, notlar, "Yok"))
+                            conn.commit()
                             st.success("Araç başarıyla iade alındı ve takvimi tekrar müsait duruma getirildi.")
                             st.rerun()
                 else:
@@ -1306,15 +995,12 @@ else:
 
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("🚨 Tüm Verileri ve Fotoğrafları Sıfırla"):
-                    for k in ["secili", "tamamlandi", "son_rezervasyon", "fatura_pdf", "eposta_sonuc"]:
-                        st.session_state[k] = None if k in ["secili", "son_rezervasyon", "fatura_pdf", "eposta_sonuc"] else False
                     if os.path.exists(LOG_FILE):
                         os.remove(LOG_FILE)
                     if os.path.exists(DB_FILE):
                         os.remove(DB_FILE)
                     for f in os.listdir(UPLOAD_DIR):
                         os.remove(os.path.join(UPLOAD_DIR, f))
-                    init_db()          # silinen veritabanını boş şemasıyla yeniden oluştur
                     st.success("Tüm veriler temizlendi!")
                     st.rerun()
             elif sifre != "":
@@ -1325,6 +1011,4 @@ else:
             st.session_state["user"] = {}
             st.session_state["secili"] = None
             st.session_state["tamamlandi"] = False
-            st.session_state["fatura_pdf"] = None
-            st.session_state["eposta_sonuc"] = None
             st.rerun()

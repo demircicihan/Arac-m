@@ -19,9 +19,6 @@ st.set_page_config(
 # --- SECRETS MANAGEMENT ---
 ADMIN_SIFRE = st.secrets.get("ADMIN_SIFRE", "cihan123")
 
-# 📲 WHATSAPP BİLDİRİMİNİN GÖNDERİLECEĞİ NUMARA (531 765 34 20)
-YONETICI_WA_TEL = "905317653420" 
-
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
 UPLOAD_DIR = "yuklemeler"
@@ -524,7 +521,7 @@ if not st.session_state["auth"]:
         )
         ad = st.text_input("Ad Soyad", placeholder="Örn: Cihan Demirci")
         tc = st.text_input("T.C. Kimlik No", max_chars=11, placeholder="11 Haneli T.C. No")
-        tel = st.text_input("Telefon No", max_chars=10, placeholder="5XXXXXXXXX")
+        tel = st.text_input("Telefon No", max_chars=10, placeholder="5XXXXXXXXX (Başına 0 Koymadan)")
 
         submit = st.form_submit_button("LÜKS FİLOYU KEŞFET ➔")
 
@@ -751,17 +748,18 @@ else:
 
                 res_info = st.session_state["son_rezervasyon"]
 
-                # 📲 BİLGİSAYARDAKİ AÇIK WHATSAPP HESABINDAN METİN GÖNDERME
-                wa_mesaj = f"Merhaba, ben {u['ad']} ({u['tel']}). {s['ad']} aracını {s['bas_tarih'].strftime('%d.%m.%Y')} - {s['bit_tarih'].strftime('%d.%m.%Y')} tarihleri arasında {s['konum']} teslimatlı rezerve ettim. Toplam Tutar: {res_info['toplam']} TL."
+                # 📲 BİLGİSAYARDA AÇIK OLAN SABİT HESAPTAN MÜŞTERİNİN GİRDİĞİ NUMARAYA BİLDİRİM GÖNDERME
+                musteri_telefon = f"90{u['tel']}" # Başındaki '90' ülke kodunu sabit ekliyoruz
+                wa_mesaj = f"Merhaba {u['ad']}, DriveNow üzerinden {s['ad']} aracı için yaptığınız rezervasyon onaylanmıştır. Kiralama Tarihleri: {s['bas_tarih'].strftime('%d.%m.%Y')} - {s['bit_tarih'].strftime('%d.%m.%Y')}. Teslim Noktası: {s['konum']}. Toplam Tutar: {res_info['toplam']} TL. İyi yolculuklar dileriz!"
                 
-                # Belirlenen 531 765 34 20 numarasına WhatsApp üzerinden mesajı iletir
-                wa_link = f"https://wa.me/{YONETICI_WA_TEL}?text={re.sub(' ', '%20', wa_mesaj)}"
+                # wa.me linki bu sefer müşterinin ("u['tel']") numarasına gidecek şekilde oluşturuluyor
+                wa_link = f"https://wa.me/{musteri_telefon}?text={re.sub(' ', '%20', wa_mesaj)}"
                 
                 st.markdown(
                     f'''
                     <a href="{wa_link}" target="_blank" style="text-decoration:none;">
                         <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; text-align: center; font-size: 16px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
-                            💬 WhatsApp İle Rezervasyon Detaylarını Gönder (0531 765 34 20)
+                            💬 Müşteriye WhatsApp İle Rezervasyon Onayı Gönder
                         </div>
                     </a>
                     ''', 

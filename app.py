@@ -593,8 +593,8 @@ else:
                 )
                 st.markdown(card_html, unsafe_allow_html=True)
 
-                # 🔍 DETAY EXPANDER (HATA DÜZELTİLDİ)
-                with st.expander(f"📋 Tüm Teknik ve Donanım Özelliklerini Gör"):
+                # 🔍 DETAY EXPANDER (HATA VE YAZI ÇAKIŞMASI DÜZELTİLDİ)
+                with st.expander("Tüm Teknik ve Donanım Özelliklerini Gör"):
                     st.markdown(
                         f"""
                         <div class="tech-grid">

@@ -32,12 +32,13 @@ def _secret(anahtar, varsayilan=""):
     except Exception:
         return varsayilan
 
-ADMIN_SIFRE_HAM = _secret("cihan123", None)
+ADMIN_SIFRE_HAM = _secret("ADMIN_SIFRE", None)
 VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR = ADMIN_SIFRE_HAM is None
-ADMIN_SIFRE = ADMIN_SIFRE_HAM or "cihan123"         # secrets yoksa geçici varsayılan
+ADMIN_SIFRE = ADMIN_SIFRE_HAM or "cihan123"
 
+# E-posta ayarları: Öncelik st.secrets'ta, yoksa doğrudan değerleri kullanır
 GMAIL_ADRES = _secret("GMAIL_ADRES", "demircicihan788@gmail.com")
-GMAIL_SIFRE = _secret("GMAIL_SIFRE", "mjleglfzrcrxnmqb")       # Google Uygulama Şifresi (16 Haneli)
+GMAIL_SIFRE = _secret("GMAIL_SIFRE", "mjleglfzrcrxnmqb")
 
 # --- KLASÖR VE DOSYA KONTROLÜ ---
 LOG_FILE = "kayitlar.txt"
@@ -51,16 +52,16 @@ if not os.path.exists(LOG_FILE):
 
 # --- VERİTABANI (SQLite) BAŞLATMA ---
 def db_baglan():
-    """Her işlem için taze bir SQLite bağlantısı açar (tek global bağlantı yok)."""
+    """Her işlem için taze bir SQLite bağlantısı açar."""
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
 def db_oku(sorgu, parametreler=None):
-    """SELECT sorgusu çalıştırıp DataFrame döndürür (parametreli, enjeksiyona kapalı)."""
+    """SELECT sorgusu çalıştırıp DataFrame döndürür."""
     with closing(db_baglan()) as conn:
         return pd.read_sql_query(sorgu, conn, params=parametreler)
 
 def db_calistir(sorgu, parametreler=()):
-    """INSERT/UPDATE/DELETE çalıştırır, commit eder ve lastrowid döndürür."""
+    """INSERT/UPDATE/DELETE çalıştırır ve lastrowid döndürür."""
     with closing(db_baglan()) as conn, conn:
         cur = conn.execute(sorgu, parametreler)
         return cur.lastrowid
@@ -154,8 +155,7 @@ def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih
 # --- E-POSTA GÖNDERİM FONKSİYONU ---
 def eposta_gonder(alici_email, pdf_bytes, musteri_adi):
     if not GMAIL_ADRES or not GMAIL_SIFRE:
-        return False, ("E-posta ayarları eksik: GMAIL_ADRES ve GMAIL_SIFRE "
-                       "değerlerini .streamlit/secrets.toml dosyasına ekleyin.")
+        return False, "E-posta yapılandırma bilgileri eksik."
     try:
         msg = EmailMessage()
         msg['Subject'] = 'DriveNow Premium - Rezervasyon Faturanız'
@@ -820,7 +820,6 @@ if not st.session_state["auth"]:
                 tc_clean = tc.strip()
                 tel_clean = tel.strip()
                 if ad.strip() and len(tc_clean) == 11 and tc_clean.isdigit() and len(tel_clean) == 10 and tel_clean.isdigit() and "@" in email:
-                    # 6 haneli rastgele OTP kodu üret
                     uretilen_kod = str(random.randint(100000, 999999))
                     st.session_state["otp_kod"] = uretilen_kod
                     st.session_state["temp_user"] = {"ad": ad.strip(), "tc": tc_clean, "tel": tel_clean, "email": email.strip()}
@@ -829,10 +828,7 @@ if not st.session_state["auth"]:
                 else:
                     st.error("Lütfen bilgileri eksiksiz ve doğru formatta girin (TC: 11 rakam, Tel: 10 rakam, Geçerli E-posta).")
     else:
-        # OTP Kod Doğrulama Ekranı
         st.info(f"📱 +90 {st.session_state['temp_user']['tel']} numaralı telefona SMS doğrulama kodu gönderildi.")
-        
-        # Simüle edilmiş SMS kutusu (Gerçek projede burası SMS API'sine bağlanır)
         st.warning(f"💬 [SİMÜLASYON SMS] DriveNow Doğrulama Kodunuz: **{st.session_state['otp_kod']}**")
 
         with st.form("otp_form"):
@@ -848,7 +844,6 @@ if not st.session_state["auth"]:
                     st.session_state["auth"] = True
                     st.session_state["user"] = st.session_state["temp_user"]
                     kaydet("GİRİŞ", f"Ad: {st.session_state['user']['ad']} - TC: {st.session_state['user']['tc']} - Tel: {st.session_state['user']['tel']} - Email: {st.session_state['user']['email']}")
-                    # Temizlik
                     st.session_state["otp_gonderildi"] = False
                     st.session_state["otp_kod"] = None
                     st.rerun()
@@ -866,7 +861,6 @@ else:
 
     with t1:
         if st.session_state["secili"] is None:
-            # 🔍 ARAMA & TARİH SEÇİM PANELİ
             with st.container(key="arama_karti"):
                 st.markdown(f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>", unsafe_allow_html=True)
 
@@ -1211,7 +1205,7 @@ else:
             if ADMIN_SIFRE and hmac.compare_digest(sifre, ADMIN_SIFRE):
                 st.success("Yetkili Girişi Onaylandı.")
                 if VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR:
-                    st.warning("Varsayılan admin şifresi kullanılıyor. Güvenlik için `ADMIN_SIFRE` değerini `.streamlit/secrets.toml` dosyasına ekleyin.")
+                    st.warning("Varsayılan admin şifresi kullanılıyor. Üretim ortamı için `ADMIN_SIFRE` değerini `.streamlit/secrets.toml` dosyasına tanımlamanız önerilir.")
 
                 st.markdown("<br><b>💬 Müşteri Yorumları ve Değerlendirmeleri</b>", unsafe_allow_html=True)
                 df_yorumlar = db_oku("SELECT ad, arac, puan, yorum, tarih FROM yorumlar ORDER BY id DESC")

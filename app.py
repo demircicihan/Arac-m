@@ -1,9 +1,3 @@
-# DriveNow Premium - Tum Kodlar
-
-Bu dosya projedeki tum kaynak kodlari tek yerde toplar.
-
-
-## `app.py`
 
 ```python
 """DriveNow Premium — Streamlit uygulama girişi.

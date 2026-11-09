@@ -1,1339 +1,200 @@
-import os
-import re
-import io
-import hmac
-import sqlite3
-import random
-from contextlib import closing
-from urllib.parse import quote
-import pandas as pd
-import plotly.express as px
-import pydeck as pdk
-from datetime import datetime, timedelta
-import smtplib
-from email.message import EmailMessage
+"""DriveNow Premium — Streamlit uygulama girişi.
+
+Çalıştırma:  streamlit run app.py
+"""
+
+from __future__ import annotations
+
+from datetime import date
+
 import streamlit as st
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 
-# --- SAYFA AYARLARI ---
+from drivenow import db
+from drivenow.components import esc, initials
+from drivenow.config import APP_NAME, APP_SUFFIX, DEMO_MODE
+from drivenow.state import (
+    current_user,
+    init_state,
+    is_guest,
+    logout,
+    session_expired,
+    set_flash,
+    show_flash,
+    touch_session,
+)
+from drivenow.theme import inject_theme
+from drivenow.views import account, admin, auth, booking, fleet
+
 st.set_page_config(
-    page_title="DriveNow Premium | Elite Fleet",
+    page_title=f"{APP_NAME} {APP_SUFFIX} • Araç Kiralama",
     page_icon="🚗",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed",
+    menu_items={
+        "Get help": None,
+        "Report a bug": None,
+        "About": f"{APP_NAME} {APP_SUFFIX} — premium araç kiralama deneyimi.",
+    },
 )
 
-# --- SECRETS MANAGEMENT & AYARLAR ---
-def _secret(anahtar, varsayilan=""):
-    """st.secrets'tan değer okur; secrets dosyası yoksa varsayılanı döndürür."""
-    try:
-        return st.secrets.get(anahtar, varsayilan)
-    except Exception:
-        return varsayilan
 
-ADMIN_SIFRE_HAM = _secret("ADMIN_SIFRE", None)
-VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR = ADMIN_SIFRE_HAM is None
-ADMIN_SIFRE = ADMIN_SIFRE_HAM or "cihan123"
+@st.cache_resource(show_spinner=False)
+def _bootstrap() -> bool:
+    db.init_db()
+    return True
 
-# E-posta ayarları: Öncelik st.secrets'ta, yoksa doğrudan değerleri kullanır
-GMAIL_ADRES = _secret("GMAIL_ADRES", "demircicihan788@gmail.com")
-GMAIL_SIFRE = _secret("GMAIL_SIFRE", "mjleglfzrcrxnmqb")
 
-# --- KLASÖR VE DOSYA KONTROLÜ ---
-LOG_FILE = "kayitlar.txt"
-UPLOAD_DIR = "yuklemeler"
-DB_FILE = "drivenow.db"
+_bootstrap()
+inject_theme()
+init_state()
 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-if not os.path.exists(LOG_FILE):
-    with open(LOG_FILE, "w", encoding="utf-8-sig") as f:
-        f.write("")
+# --- Oturum süresi ----------------------------------------------------------
+if (
+    st.session_state.get("auth")
+    and not is_guest()
+    and session_expired()
+):
+    logout()
+    set_flash("Oturum süreniz doldu. Güvenliğiniz için tekrar giriş yapın.", "warning")
+    st.rerun()
+touch_session()
 
-# --- VERİTABANI (SQLite) BAŞLATMA ---
-def db_baglan():
-    """Her işlem için taze bir SQLite bağlantısı açar."""
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
 
-def db_oku(sorgu, parametreler=None):
-    """SELECT sorgusu çalıştırıp DataFrame döndürür."""
-    with closing(db_baglan()) as conn:
-        return pd.read_sql_query(sorgu, conn, params=parametreler)
+def _topbar() -> None:
+    user = current_user() or {}
+    guest = is_guest()
+    left, right = st.columns([3, 1.15], vertical_alignment="center")
 
-def db_calistir(sorgu, parametreler=()):
-    """INSERT/UPDATE/DELETE çalıştırır ve lastrowid döndürür."""
-    with closing(db_baglan()) as conn, conn:
-        cur = conn.execute(sorgu, parametreler)
-        return cur.lastrowid
+    with left:
+        st.markdown(
+            '<div class="dn-topbar" style="padding-bottom:6px">'
+            '<div class="dn-brand">'
+            '<div class="dn-brand-mark">🚗</div>'
+            "<div>"
+            f'<div class="dn-brand-name">{esc(APP_NAME)} <span>{esc(APP_SUFFIX)}</span></div>'
+            '<div class="dn-brand-sub">Premium Araç Kiralama</div>'
+            "</div></div></div>",
+            unsafe_allow_html=True,
+        )
 
-def init_db():
-    with closing(db_baglan()) as conn, conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS kiralamalar 
-                     (id INTEGER PRIMARY KEY AUTOINCREMENT, tc TEXT, ad TEXT, tel TEXT, email TEXT, 
-                     arac TEXT, konum TEXT, bas_tarih DATE, bit_tarih DATE, gun INTEGER, 
-                     toplam_tutar REAL, durum TEXT, olusturma_tarihi DATETIME)''')
-        conn.execute('''CREATE TABLE IF NOT EXISTS iadeler 
-                     (id INTEGER PRIMARY KEY AUTOINCREMENT, kiralama_id INTEGER, 
-                     km INTEGER, hasar_durumu TEXT, notlar TEXT, foto_yolu TEXT)''')
-        conn.execute('''CREATE TABLE IF NOT EXISTS yorumlar 
-                     (id INTEGER PRIMARY KEY AUTOINCREMENT, ad TEXT, arac TEXT, puan INTEGER, yorum TEXT, tarih DATETIME)''')
+    with right:
+        if st.session_state.get("auth") and not guest:
+            chip, action = st.columns([2.1, 1], vertical_alignment="center")
+            with chip:
+                st.markdown(
+                    '<div class="dn-user-chip">'
+                    f'<div class="dn-avatar">{esc(initials(user.get("ad", "")))}</div>'
+                    "<div>"
+                    f'<b>{esc(user.get("ad", "Müşteri"))}</b>'
+                    f'<small>{esc(user.get("email", "") or "Doğrulanmış üye")}</small>'
+                    "</div></div>",
+                    unsafe_allow_html=True,
+                )
+            with action:
+                if st.button("Çıkış", width="stretch", key="topbar_logout"):
+                    logout()
+                    set_flash("Güvenli çıkış yapıldı. Tekrar bekleriz.", "info")
+                    st.rerun()
+        elif guest:
+            chip, action = st.columns([2.1, 1], vertical_alignment="center")
+            with chip:
+                st.markdown(
+                    '<div class="dn-user-chip">'
+                    '<div class="dn-avatar">👤</div>'
+                    "<div><b>Misafir</b><small>Keşif modu</small></div></div>",
+                    unsafe_allow_html=True,
+                )
+            with action:
+                if st.button("Giriş yap", width="stretch", key="topbar_login"):
+                    st.session_state["auth"] = False
+                    st.session_state["guest"] = False
+                    st.session_state["user"] = None
+                    st.rerun()
 
-init_db()
 
-# --- HARİTA KOORDİNATLARI ---
-LOKASYONLAR = {
-    "Konya • Ereğli Merkez / KYK Yurdu": [37.5133, 34.0525],
-    "Konya • Ereğli Otogar & Tren Garı": [37.5250, 34.0450],
-    "Konya • Çumra İlçe Merkezi": [37.5744, 32.7744],
-    "Konya • Selçuklu / Otogar": [37.9535, 32.5100],
-    "Konya • Zafer / Alaaddin Merkez": [37.8713, 32.4846],
-    "Konya • Havalimanı (KYA)": [37.9790, 32.5619],
-    "İstanbul • Sabiha Gökçen Havalimanı (SAW)": [40.8983, 29.3092],
-    "İstanbul • İstanbul Havalimanı (IST)": [41.2753, 28.7519],
-    "Ankara • Esenboğa Havalimanı (ESB)": [40.1281, 32.9951],
-    "İzmir • Adnan Menderes Havalimanı (ADB)": [38.2924, 27.1570],
-    "Antalya • Havalimanı (AYT) Dış/İç Hatlar": [36.9000, 30.7990],
-}
-
-# --- TÜRKÇE KARAKTER DÜZELTME FİLTRESİ ---
-def tr_duzelt(metin):
-    if not isinstance(metin, str):
-        return str(metin)
-    tr_harfler = "ıİğĞüÜşŞöÖçÇ"
-    en_harfler = "iIgGuUsSoOcC"
-    ceviri_tablosu = str.maketrans(tr_harfler, en_harfler)
-    return metin.translate(ceviri_tablosu)
-
-# --- GERÇEK ZAMANLI MÜSAİTLİK KONTROLÜ ---
-def araba_musait_mi(arac_ad, bas_tarih, bit_tarih):
-    with closing(db_baglan()) as conn:
-        satirlar = conn.execute('''SELECT id FROM kiralamalar 
-                                   WHERE arac = ? AND durum = 'Aktif' 
-                                   AND (? <= bit_tarih AND ? >= bas_tarih)''',
-                                 (arac_ad,
-                                  bas_tarih.strftime("%Y-%m-%d"),
-                                  bit_tarih.strftime("%Y-%m-%d"))).fetchall()
-    return len(satirlar) == 0
-
-# --- PDF FATURA OLUŞTURMA FONKSİYONU ---
-def pdf_fatura_olustur(musteri_ad, tc, tel, arac_ad, konum, bas_tarih, bit_tarih, gun, toplam_tutar, ekler):
-    buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=letter)
-    
-    p.setFont("Helvetica-Bold", 18)
-    p.drawString(50, 750, tr_duzelt("DRIVENOW PREMIUM RENTALS - REZERVASYON OZETI"))
-    p.line(50, 740, 550, 740)
-    
-    p.setFont("Helvetica", 12)
-    p.drawString(50, 710, tr_duzelt(f"Tarih: {datetime.now().strftime('%d.%m.%Y %H:%M')}"))
-    p.drawString(50, 690, tr_duzelt(f"Musteri Ad Soyad: {musteri_ad}"))
-    p.drawString(50, 670, tr_duzelt(f"TC Kimlik No: {tc}"))
-    p.drawString(50, 650, tr_duzelt(f"Telefon: {tel}"))
-    
-    p.line(50, 635, 550, 635)
-    
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, 610, tr_duzelt("KIRALAMA VE ARAC BILGILERI"))
-    p.setFont("Helvetica", 12)
-    p.drawString(50, 585, tr_duzelt(f"Arac Modeli: {arac_ad}"))
-    p.drawString(50, 565, tr_duzelt(f"Teslimat Noktasi: {konum}"))
-    p.drawString(50, 545, tr_duzelt(f"Tarihler: {bas_tarih.strftime('%d.%m.%Y')} - {bit_tarih.strftime('%d.%m.%Y')} ({gun} Gun)"))
-    
-    if ekler:
-        p.drawString(50, 525, tr_duzelt(f"Ekstra Hizmetler: {', '.join(ekler)}"))
-    
-    p.line(50, 505, 550, 505)
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, 475, tr_duzelt(f"TOPLAM TUTAR: {toplam_tutar:,.0f} TL"))
-    p.setFont("Helvetica-Oblique", 10)
-    p.drawString(50, 450, tr_duzelt("* Odeme arac teslimatinda nakit veya kredi karti ile yapilacaktir."))
-    
-    p.showPage()
-    p.save()
-    return buffer.getvalue()
-
-# --- E-POSTA GÖNDERİM FONKSİYONU ---
-def eposta_gonder(alici_email, pdf_bytes, musteri_adi):
-    if not GMAIL_ADRES or not GMAIL_SIFRE:
-        return False, "E-posta yapılandırma bilgileri eksik."
-    try:
-        msg = EmailMessage()
-        msg['Subject'] = 'DriveNow Premium - Rezervasyon Faturanız'
-        msg['From'] = GMAIL_ADRES
-        msg['To'] = alici_email
-        msg.set_content(f"Merhaba {musteri_adi},\n\nRezervasyonunuz basariyla onaylanmistir. Fatura ve kiralama detaylariniz ekteki PDF dosyasinda yer almaktadir.\n\nIyi yolculuklar dileriz.")
-        
-        msg.add_attachment(pdf_bytes, maintype='application', subtype='pdf', filename='DriveNow_Fatura.pdf')
-        
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=20) as smtp:
-            smtp.login(GMAIL_ADRES, GMAIL_SIFRE)
-            smtp.send_message(msg)
-        return True, ""
-    except Exception as e:
-        return False, f"{type(e).__name__}: {e}"
-
-# --- ARAÇ FİLOSU ---
-ARACLAR = [
-    {
-        "ad": "Fiat Egea Cross Lounge",
-        "kat": "CROSSOVER • EKONOMİK",
-        "vites": "Manuel",
-        "yakit": "Dizel",
-        "fiyat": 1250,
-        "puan": "4.6",
-        "koltuk": "5 Koltuk",
-        "bagaj": "440 Lt",
-        "badge": "🛣️ UYGUN & MUKAVEMETLİ",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Fiat_Tipo_Sedan_Facelift_Leonberg_2022_1X7A0412.jpg/960px-Fiat_Tipo_Sedan_Facelift_Leonberg_2022_1X7A0412.jpg",
-        "motor": "1.3 MultiJet II (95 HP / 200 Nm)",
-        "sanziman": "5 İleri Manuel",
-        "tuketim": "4.4 Lt / 100km",
-        "hizlanma": "0-100 km/s: 12.8 sn",
-        "azami_hiz": "173 km/s",
-        "cekis": "Önden Çekiş (FWD)",
-        "donanimlar": ["Yüksek Sürüş Pozisyonu", "City Direksiyon Modu", "10 Inc Tablet Ekran", "Tavan Çıtaları & LED Farlar", "Geri Görüş Kamerası"],
-    },
-    {
-        "ad": "Renault Clio R.S. Line",
-        "kat": "HATCHBACK • EKONOMİK",
-        "vites": "Manuel",
-        "yakit": "Benzin",
-        "fiyat": 1350,
-        "puan": "4.7",
-        "koltuk": "5 Koltuk",
-        "bagaj": "391 Lt",
-        "badge": "💡 ŞEHİR DOSTU",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3b/Renault_Clio_%28V%2C_Facelift%29_%E2%80%93_f_02092025.jpg/330px-Renault_Clio_%28V%2C_Facelift%29_%E2%80%93_f_02092025.jpg",
-        "motor": "1.0 TCe Turbo (90 HP / 160 Nm)",
-        "sanziman": "6 İleri Manuel",
-        "tuketim": "5.0 Lt / 100km",
-        "hizlanma": "0-100 km/s: 12.2 sn",
-        "azami_hiz": "180 km/s",
-        "cekis": "Önden Çekiş (FWD)",
-        "donanimlar": ["Apple CarPlay & Android Auto", "Ön & Arka Park Sensörü", "Start-Stop Sistemi", "EASYLINK 9.3 Inc Ekran", "Digital Gösterge Paneli"],
-    },
-    {
-        "ad": "Ford Focus ST-Line",
-        "kat": "COMPACT • KONFOR",
-        "vites": "Otomatik",
-        "yakit": "Benzin",
-        "fiyat": 1800,
-        "puan": "4.8",
-        "koltuk": "5 Koltuk",
-        "bagaj": "392 Lt",
-        "badge": "🌟 AİLE DOSTU",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/2018_Ford_Focus_ST-Line_X_1.0.jpg/330px-2018_Ford_Focus_ST-Line_X_1.0.jpg",
-        "motor": "1.5 Ti-VCT Ecoboost (123 HP / 153 Nm)",
-        "sanziman": "6 İleri Tam Otomatik",
-        "tuketim": "6.2 Lt / 100km",
-        "hizlanma": "0-100 km/s: 11.2 sn",
-        "azami_hiz": "195 km/s",
-        "cekis": "Önden Çekiş (FWD)",
-        "donanimlar": ["SYNC 4 13.2 Inc Ekran", "Şerit Takip ve Destek", "180° Geri Görüş Kamerası", "Kablosuz Şarj", "ST-Line Gövde Kiti"],
-    },
-    {
-        "ad": "Volkswagen Tiguan R-Line",
-        "kat": "SUV • PREMİUM KONFOR",
-        "vites": "Otomatik",
-        "yakit": "Benzin",
-        "fiyat": 2800,
-        "puan": "4.8",
-        "koltuk": "5 Koltuk",
-        "bagaj": "615 Lt",
-        "badge": "🏕️ PREMİUM SUV",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Volkswagen_Tiguan_III_IMG_8823_%28cropped%29.jpg/330px-Volkswagen_Tiguan_III_IMG_8823_%28cropped%29.jpg",
-        "motor": "1.5 TSI ACT (150 HP / 250 Nm)",
-        "sanziman": "7 İleri DSG Otomatik",
-        "tuketim": "5.7 Lt / 100km",
-        "hizlanma": "0-100 km/s: 9.2 sn",
-        "azami_hiz": "202 km/s",
-        "cekis": "Önden Çekiş (FWD)",
-        "donanimlar": ["IQ.LIGHT Matrix LED Farlar", "Digital Cockpit Pro", "Panoramik Açılır Tavan", "3 Bölgeli Tam Otomatik Klima", "Bagaj Elektrikli Açılır"],
-    },
-    {
-        "ad": "Peugeot 508 GT",
-        "kat": "SEDAN • PREMİUM",
-        "vites": "Otomatik",
-        "yakit": "Dizel",
-        "fiyat": 2600,
-        "puan": "4.9",
-        "koltuk": "5 Koltuk",
-        "bagaj": "487 Lt",
-        "badge": "🔥 EN ÇOK TERCİH EDİLEN",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/01/2019_Peugeot_508_GT-Line_BlueHDi_1.5_%28130_PS%29_Front.jpg/330px-2019_Peugeot_508_GT-Line_BlueHDi_1.5_%28130_PS%29_Front.jpg",
-        "motor": "1.5 BlueHDi (130 HP / 300 Nm Torque)",
-        "sanziman": "8 İleri Tam Otomatik EAT8",
-        "tuketim": "4.1 Lt / 100km",
-        "hizlanma": "0-100 km/s: 9.9 sn",
-        "azami_hiz": "208 km/s",
-        "cekis": "Önden Çekiş (FWD)",
-        "donanimlar": ["Massage Seat", "Focal® Hi-Fi Ses Sistemi", "Night Vision Gece Görüşü", "Kör Nokta Uyarı", "Adaptif Hız Sabitleyici"],
-    },
-    {
-        "ad": "Tesla Model 3 Performance",
-        "kat": "LÜKS • %100 ELEKTRİK",
-        "vites": "Otomatik",
-        "yakit": "Elektrik",
-        "fiyat": 3800,
-        "puan": "5.0",
-        "koltuk": "5 Koltuk",
-        "bagaj": "561 Lt",
-        "badge": "⚡ TEKNOLOJİ HARİKASI",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Tesla_Model_3_%282023%29_Autofr%C3%BChling_Ulm_IMG_9282.jpg/330px-Tesla_Model_3_%282023%29_Autofr%C3%BChling_Ulm_IMG_9282.jpg",
-        "motor": "Dual Motor AWD (510 HP / 660 Nm Torque)",
-        "sanziman": "Tek Vitesli Otomatik Direct Drive",
-        "tuketim": "14.4 kWh / 100km (Menzil: 528 km)",
-        "hizlanma": "0-100 km/s: 3.1 sn",
-        "azami_hiz": "261 km/s",
-        "cekis": "Dört Çeker (AWD)",
-        "donanimlar": ["Full Self-Driving Autopilot", "Panoramik Cam Tavan", "15.4 Inc Touchscreen", "Koltuk & Direksiyon Isıtma", "Sentry Mode Güvenlik"],
-    },
-    {
-        "ad": "BMW 420i Gran Coupé M Sport",
-        "kat": "COUPE • PREMİUM SPOR",
-        "vites": "Otomatik",
-        "yakit": "Benzin",
-        "fiyat": 4200,
-        "puan": "4.9",
-        "koltuk": "5 Koltuk",
-        "bagaj": "470 Lt",
-        "badge": "💎 PREMİUM SPOR",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/2020_BMW_420i_Sport_Automatic_2.0.jpg/330px-2020_BMW_420i_Sport_Automatic_2.0.jpg",
-        "motor": "2.0 BMW TwinPower Turbo (170 HP / 250 Nm)",
-        "sanziman": "8 İleri Steptronic Spor Otomatik",
-        "tuketim": "6.6 Lt / 100km",
-        "hizlanma": "0-100 km/s: 7.9 sn",
-        "azami_hiz": "230 km/s",
-        "cekis": "Arkadan İtiş (RWD)",
-        "donanimlar": ["M Aerodinamik Paket", "Harman Kardon® Ses Sistemi", "BMW Curved Display", "Head-Up Display", "Lazer Far"],
-    },
-    {
-        "ad": "Mercedes-Benz C200 4MATIC",
-        "kat": "SEDAN • LÜKS KONFOR",
-        "vites": "Otomatik",
-        "yakit": "Benzin",
-        "fiyat": 4500,
-        "puan": "4.9",
-        "koltuk": "5 Koltuk",
-        "bagaj": "455 Lt",
-        "badge": "👑 KONFORUN SİMGESİ",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Mercedes-Benz_W206_IMG_5796.jpg/330px-Mercedes-Benz_W206_IMG_5796.jpg",
-        "motor": "1.5 Mild-Hybrid Turbo (204 HP + 20 HP EQ)",
-        "sanziman": "9G-TRONIC Otomatik",
-        "tuketim": "6.4 Lt / 100km",
-        "hizlanma": "0-100 km/s: 7.1 sn",
-        "azami_hiz": "241 km/s",
-        "cekis": "Dört Çeker (4MATIC)",
-        "donanimlar": ["MBUX 11.9 Inc Dikey Ekran", "64 Renk Ambiyans Aydınlatma", "Burmester® 3D Ses", "Hafızalı Elektrikli Koltuklar", "Otonom Sürüş Destek"],
-    },
-    {
-        "ad": "Audi A5 Cabriolet S-Line",
-        "kat": "CABRIO • PREMİUM LÜKS",
-        "vites": "Otomatik",
-        "yakit": "Benzin",
-        "fiyat": 4900,
-        "puan": "4.9",
-        "koltuk": "4 Koltuk",
-        "bagaj": "370 Lt",
-        "badge": "☀️ ÜSTÜ AÇIK LÜKS",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/Audi_A5_B10_DSC_7314.jpg/330px-Audi_A5_B10_DSC_7314.jpg",
-        "motor": "2.0 40 TFSI Mild-Hybrid (204 HP / 320 Nm)",
-        "sanziman": "7 İleri S tronic Otomatik",
-        "tuketim": "6.3 Lt / 100km",
-        "hizlanma": "0-100 km/s: 7.5 sn",
-        "azami_hiz": "237 km/s",
-        "cekis": "Önden Çekiş (FWD)",
-        "donanimlar": ["Otomatik Açılır Kumaş Tavan", "Virtual Cockpit Plus", "Bang & Olufsen 3D Sound", "Ense Isıtma Sistemi", "Matrix LED Farlar"],
-    },
-    {
-        "ad": "Porsche Macan GTS",
-        "kat": "SUV • LÜKS SPOR",
-        "vites": "Otomatik",
-        "yakit": "Benzin",
-        "fiyat": 7500,
-        "puan": "5.0",
-        "koltuk": "5 Koltuk",
-        "bagaj": "488 Lt",
-        "badge": "🏎️ ULTRA PERFORMANS",
-        "gorsel": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Porsche_Macan_4_IMG_2153.jpg/330px-Porsche_Macan_4_IMG_2153.jpg",
-        "motor": "2.9 V6 Twin-Turbo (440 HP / 550 Nm)",
-        "sanziman": "7 İleri PDK Çift Kavrama",
-        "tuketim": "9.9 Lt / 100km",
-        "hizlanma": "0-100 km/s: 4.3 sn",
-        "azami_hiz": "272 km/s",
-        "cekis": "Dört Çeker (AWD)",
-        "donanimlar": ["Spor Ekzoz Sistemi", "PASM Havalı Süspansiyon", "BOSE® Surround Sound", "GTS Spor Koltuklar", "Sport Chrono Paket"],
-    },
-]
-
-# --- MODERN CSS TASARIMI ---
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #0F172A 100%) !important;
-        background-attachment: fixed !important;
-    }
-
-    header {visibility: hidden !important;}
-    footer {visibility: hidden !important;}
-
-    html, body, label, p, h1, h2, h3, h4, h5, h6, span, div, b, small, strong {
-        color: #F8FAFC !important;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", Roboto, sans-serif !important;
-    }
-
-    span[data-testid="stIconMaterial"],
-    span.material-symbols-rounded,
-    span.material-icons {
-        font-family: "Material Symbols Rounded", "Material Icons" !important;
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
-        color: inherit !important;
-    }
-
-    .search-card, .st-key-arama_karti {
-        background: rgba(30, 41, 59, 0.7) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        padding: 24px !important;
-        border-radius: 28px !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
-        margin-bottom: 25px !important;
-    }
-
-    .car-card-detailed {
-        background: rgba(30, 41, 59, 0.65) !important;
-        backdrop-filter: blur(12px) !important;
-        padding: 24px !important;
-        border-radius: 26px !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3) !important;
-        margin-bottom: 12px !important;
-        transition: transform 0.3s ease, border-color 0.3s ease !important;
-    }
-    .car-card-detailed:hover {
-        border-color: rgba(99, 102, 241, 0.5) !important;
-        transform: translateY(-2px);
-    }
-
-    .car-card-row {
-        display: flex !important;
-        gap: 18px !important;
-        align-items: flex-start !important;
-        flex-wrap: wrap !important;
-    }
-    .car-card-main {
-        flex: 1 1 260px !important;
-        min-width: 0 !important;
-    }
-    .car-image-box {
-        position: relative !important;
-        flex: 0 0 190px !important;
-        width: 190px !important;
-        height: 126px !important;
-        border-radius: 18px !important;
-        overflow: hidden !important;
-        background: linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 34px !important;
-    }
-    .car-image-box img {
-        position: absolute !important;
-        inset: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;
-        transition: transform 0.4s ease !important;
-    }
-    .car-card-detailed:hover .car-image-box img {
-        transform: scale(1.07) !important;
-    }
-    @media (max-width: 720px) {
-        .car-image-box {
-            flex: 1 1 100% !important;
-            width: 100% !important;
-            height: 180px !important;
-        }
-    }
-
-    .badge-highlight {
-        background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%) !important;
-        color: #FFFFFF !important;
-        font-size: 11px !important;
-        font-weight: 900 !important;
-        padding: 4px 12px !important;
-        border-radius: 20px !important;
-        display: inline-block !important;
-        margin-bottom: 10px !important;
-        letter-spacing: 0.5px !important;
-    }
-
-    .tag-vites { background: rgba(59, 130, 246, 0.15) !important; color: #93C5FD !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(147, 197, 253, 0.2); display: inline-block; margin-right: 6px; margin-bottom: 6px; }
-    .tag-yakit { background: rgba(245, 158, 11, 0.15) !important; color: #FDE68A !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(253, 230, 138, 0.2); display: inline-block; margin-right: 6px; margin-bottom: 6px; }
-    .tag-koltuk { background: rgba(168, 85, 247, 0.15) !important; color: #E9D5FF !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(233, 213, 255, 0.2); display: inline-block; margin-right: 6px; margin-bottom: 6px; }
-    .tag-bagaj { background: rgba(16, 185, 129, 0.15) !important; color: #A7F3D0 !important; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(167, 243, 208, 0.2); display: inline-block; margin-bottom: 6px; }
-
-    .tech-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        background: rgba(15, 23, 42, 0.5);
-        padding: 14px;
-        border-radius: 14px;
-        margin: 12px 0;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .tech-item {
-        font-size: 12px;
-        color: #CBD5E1 !important;
-        font-weight: 600;
-    }
-
-    .feature-chip {
-        background: rgba(255, 255, 255, 0.06) !important;
-        color: #E2E8F0 !important;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 4px 10px;
-        border-radius: 8px;
-        display: inline-block;
-        margin-right: 6px;
-        margin-top: 6px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .guarantee-badge {
-        background: rgba(16, 185, 129, 0.12) !important;
-        color: #34D399 !important;
-        font-weight: 800 !important;
-        font-size: 12px !important;
-        padding: 6px 14px !important;
-        border-radius: 12px !important;
-        display: inline-block !important;
-        border: 1px solid rgba(52, 211, 153, 0.25) !important;
-    }
-
-    .price-row-box {
-        background: rgba(15, 23, 42, 0.6) !important;
-        padding: 16px 20px !important;
-        border-radius: 18px !important;
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        margin-top: 16px !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    }
-
-    div.stButton > button, div.stFormSubmitButton > button {
-        background: linear-gradient(135deg, #FF6B00 0%, #FF3D00 100%) !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-        border-radius: 16px !important;
-        border: none !important;
-        font-weight: 900 !important;
-        font-size: 16px !important;
-        height: 54px !important;
-        width: 100% !important;
-        box-shadow: 0 10px 25px rgba(255, 107, 0, 0.35) !important;
-        transition: all 0.3s ease !important;
-        cursor: pointer !important;
-    }
-
-    div[data-testid="stExpander"] {
-        background: rgba(15, 23, 42, 0.4) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 14px !important;
-        margin-bottom: 15px !important;
-    }
-
-    div[data-testid="stExpander"] summary span[data-testid="stIconMaterial"] {
-        display: none !important;
-    }
-
-    div[data-testid="stExpander"] summary svg {
-        display: none !important;
-    }
-
-    div[data-testid="stExpander"] summary p {
-        font-weight: 700 !important;
-        font-size: 14px !important;
-        color: #38BDF8 !important;
-    }
-
-    [data-testid="stDownloadButton"] > button {
-        background: rgba(255, 255, 255, 0.05) !important;
-        color: #60A5FA !important;
-        -webkit-text-fill-color: #60A5FA !important;
-        border: 1.5px solid rgba(96, 165, 250, 0.4) !important;
-        border-radius: 14px !important;
-        font-weight: 800 !important;
-        height: 48px !important;
-        width: 100% !important;
-    }
-
-    input, .stNumberInput div, div[data-baseweb="base-input"], div[data-baseweb="select"] {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        color: #F8FAFC !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-    }
-
-    div[data-testid="stDateInputField"] {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-    div[data-testid="stDateInputField"] *,
-    div[data-testid="stDateInputField"] input,
-    div[data-testid="stDateInputField"] span {
-        background-color: transparent !important;
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-        opacity: 1 !important;
-    }
-    div[data-testid="stDateInputField"] input::placeholder {
-        color: #94A3B8 !important;
-        -webkit-text-fill-color: #94A3B8 !important;
-        opacity: 1 !important;
-    }
-    div[data-testid="stDateInputCalendarButton"],
-    div[data-testid="stDateInputCalendarButton"] svg {
-        color: #93C5FD !important;
-        fill: #93C5FD !important;
-        opacity: 1 !important;
-    }
-
-    div[data-testid="stDateInputCalendar"] {
-        background-color: #1E293B !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 16px !important;
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5) !important;
-    }
-    div[data-testid="stDateInputCalendar"] * {
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-    }
-    div[data-testid="stDateInputCalendar"] td[aria-selected="true"],
-    div[data-testid="stDateInputCalendar"] [aria-selected="true"] {
-        background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%) !important;
-        border-radius: 10px !important;
-    }
-    div[data-testid="stDateInputCalendar"] td:hover {
-        background-color: rgba(255, 255, 255, 0.08) !important;
-        border-radius: 10px !important;
-    }
-
-    div[data-testid="stSelectbox"] [role="group"] {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-    div[data-testid="stSelectbox"] input,
-    div[data-testid="stSelectbox"] input::placeholder {
-        background-color: transparent !important;
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-    }
-    div[data-testid="stSelectbox"] svg {
-        color: #93C5FD !important;
-        fill: #93C5FD !important;
-    }
-
-    header[data-testid="stHeader"], div[data-testid="stAppHeader"] {
-        background: transparent !important;
-    }
-    div[data-testid="stElementToolbarButtonContainer"] {
-        background-color: rgba(30, 41, 59, 0.9) !important;
-        border-radius: 8px !important;
-    }
-
-    div[data-testid="stTextInputRootElement"],
-    div[data-testid="stNumberInputRootElement"] {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-
-    div[data-testid="stTextAreaRootElement"],
-    div[data-testid="stTextAreaRootElement"] textarea {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-    div[data-testid="stTextAreaRootElement"] textarea::placeholder {
-        color: #94A3B8 !important;
-        -webkit-text-fill-color: #94A3B8 !important;
-    }
-
-    div[data-testid="stDataFrame"] {
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        border-radius: 14px !important;
-        overflow: hidden !important;
-    }
-
-    section[data-testid="stFileUploaderDropzone"] {
-        background-color: rgba(15, 23, 42, 0.6) !important;
-        border: 1.5px dashed rgba(147, 197, 253, 0.35) !important;
-        border-radius: 16px !important;
-    }
-    section[data-testid="stFileUploaderDropzone"] div,
-    section[data-testid="stFileUploaderDropzone"] span,
-    section[data-testid="stFileUploaderDropzone"] small,
-    section[data-testid="stFileUploaderDropzone"] p {
-        color: #CBD5E1 !important;
-        -webkit-text-fill-color: #CBD5E1 !important;
-    }
-    section[data-testid="stFileUploaderDropzone"] svg {
-        fill: #93C5FD !important;
-        color: #93C5FD !important;
-    }
-    section[data-testid="stFileUploaderDropzone"] button {
-        background: rgba(147, 197, 253, 0.15) !important;
-        border: 1px solid rgba(147, 197, 253, 0.4) !important;
-        border-radius: 10px !important;
-        color: #93C5FD !important;
-        -webkit-text-fill-color: #93C5FD !important;
-        height: auto !important;
-        width: auto !important;
-        min-height: 0 !important;
-        box-shadow: none !important;
-        padding: 8px 16px !important;
-        font-size: 13px !important;
-    }
-    section[data-testid="stFileUploaderDropzone"] button * {
-        color: #93C5FD !important;
-        -webkit-text-fill-color: #93C5FD !important;
-    }
-
-    div[data-baseweb="popover"], div[data-baseweb="popover"] * {
-        background-color: #1E293B !important;
-        color: #F8FAFC !important;
-        -webkit-text-fill-color: #F8FAFC !important;
-    }
-    ul[data-baseweb="menu"] {
-        background-color: #1E293B !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 14px !important;
-    }
-    li[data-baseweb="option"] {
-        background-color: #1E293B !important;
-        color: #F8FAFC !important;
-    }
-
-    div[data-baseweb="tab-list"] {
-        background-color: rgba(30, 41, 59, 0.8) !important;
-        backdrop-filter: blur(10px) !important;
-        border-radius: 20px !important;
-        padding: 6px !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
-        margin-bottom: 20px !important;
-    }
-    div[aria-selected="true"] {
-        background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%) !important;
-        border-radius: 14px !important;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
-    }
-
-    .vip-card {
-        background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%) !important;
-        padding: 26px !important;
-        border-radius: 26px !important;
-        border: 1px solid rgba(147, 197, 253, 0.2) !important;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
-        margin-bottom: 20px !important;
-    }
-    .vip-card * {
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }
-    .vip-card .vip-tag {
-        color: #38BDF8 !important;
-        -webkit-text-fill-color: #38BDF8 !important;
-    }
-    .vip-card .vip-subtext {
-        opacity: 0.65;
-        color: #94A3B8 !important;
-        -webkit-text-fill-color: #94A3B8 !important;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
-# --- KAYIT SİSTEMİ FONKSİYONLARI (.TXT) ---
-def kaydet(tip: str, mesaj: str):
-    zaman = datetime.now().strftime("%d.%m.%Y %H:%M")
-    with open(LOG_FILE, "a", encoding="utf-8-sig") as f:
-        f.write(f"{zaman} | {tip} | {mesaj}\n")
-
-def kayitlari_ayristir():
-    if not os.path.exists(LOG_FILE):
-        return "", ""
-    girisler, kiralama = [], []
-    with open(LOG_FILE, "r", encoding="utf-8-sig") as f:
-        for satir in f:
-            if "| GİRİŞ |" in satir:
-                girisler.append(satir.strip())
-            elif "| KİRALAMA |" in satir:
-                kiralama.append(satir.strip())
-    return "\n".join(girisler), "\n".join(kiralama)
-
-# --- OTURUM YÖNETİMİ ---
-for k in ["auth", "user", "secili", "tamamlandi", "tarihler", "son_rezervasyon", "fatura_pdf", "eposta_sonuc", "otp_kod", "otp_gonderildi"]:
-    if k not in st.session_state: 
-        st.session_state[k] = None if k in ["secili", "tarihler", "son_rezervasyon", "fatura_pdf", "eposta_sonuc", "otp_kod"] else (False if k in ["auth", "tamamlandi", "otp_gonderildi"] else {})
-
-# --- GİRİŞ EKRANI & SMS OTP DOĞRULAMA ---
-if not st.session_state["auth"]:
+def _login_prompt(title: str, text: str) -> None:
     st.markdown(
-        """
-        <div style="text-align: center; padding: 30px 0 20px 0;">
-            <div style="background: rgba(99, 102, 241, 0.15); color: #818CF8 !important; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 800; display: inline-block; margin-bottom: 12px; border: 1px solid rgba(129, 140, 248, 0.3);">
-                📍 Türkiye Geneli VIP Adrese Delivery
-            </div>
-            <h1 style="font-size: 42px; font-weight: 900; margin: 0; background: linear-gradient(90deg, #FFFFFF 0%, #38BDF8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">DriveNow</h1>
-            <p style="font-size: 16px; font-weight: 600; color: #94A3B8;">Ayrıcalıklı Sürüş & Premium Filo Deneyimi</p>
-        </div>
-        """,
+        f'<div class="dn-empty"><div class="dn-empty__icon">🔐</div>'
+        f"<b>{esc(title)}</b><span>{esc(text)}</span></div>",
+        unsafe_allow_html=True,
+    )
+    c1, c2, c3 = st.columns([1, 1, 1])
+    with c2:
+        if st.button("Giriş ekranına dön", type="primary", width="stretch"):
+            st.session_state["auth"] = False
+            st.session_state["guest"] = False
+            st.session_state["user"] = None
+            st.session_state["auth_notice"] = "Devam etmek için lütfen giriş yapın."
+            st.rerun()
+
+
+def _footer() -> None:
+    demo = " • Demo modu" if DEMO_MODE else ""
+    year = date.today().year
+    st.markdown(
+        '<div class="dn-footer">'
+        f"<div><b>{esc(APP_NAME)} {esc(APP_SUFFIX)}</b> • Premium filo, kapınıza teslim{demo}</div>"
+        "<div>destek@drivenow.com.tr • 0850 000 00 00 • Konya / Türkiye</div>"
+        f"<div>© {year} DriveNow. Tüm hakları saklıdır.</div>"
+        "</div>",
         unsafe_allow_html=True,
     )
 
-    if not st.session_state["otp_gonderildi"]:
-        with st.form("login_form"):
-            st.markdown("<p style='font-size: 17px; font-weight: 800; margin-bottom: 12px;'>👋 Hoş Geldiniz, Bilgilerinizi Girin</p>", unsafe_allow_html=True)
-            ad = st.text_input("Ad Soyad", placeholder="Örn: Cihan Demirci")
-            tc = st.text_input("T.C. Kimlik No", max_chars=11, placeholder="11 Haneli T.C. No")
-            tel = st.text_input("Telefon No", max_chars=10, placeholder="5XXXXXXXXX (Başına 0 Koymadan)")
-            email = st.text_input("E-Posta Adresi (Fatura otomatik gönderimi için)")
 
-            submit = st.form_submit_button("SMS DOĞRULAMA KODU GÖNDER ➔")
+# --- Giriş yapılmamış -------------------------------------------------------
+if not st.session_state.get("auth"):
+    auth.render()
+    _footer()
+    st.stop()
 
-            if submit:
-                tc_clean = tc.strip()
-                tel_clean = tel.strip()
-                if ad.strip() and len(tc_clean) == 11 and tc_clean.isdigit() and len(tel_clean) == 10 and tel_clean.isdigit() and "@" in email:
-                    uretilen_kod = str(random.randint(100000, 999999))
-                    st.session_state["otp_kod"] = uretilen_kod
-                    st.session_state["temp_user"] = {"ad": ad.strip(), "tc": tc_clean, "tel": tel_clean, "email": email.strip()}
-                    st.session_state["otp_gonderildi"] = True
-                    st.rerun()
-                else:
-                    st.error("Lütfen bilgileri eksiksiz ve doğru formatta girin (TC: 11 rakam, Tel: 10 rakam, Geçerli E-posta).")
+_topbar()
+show_flash()
+
+booking_active = bool(
+    st.session_state.get("secili") or st.session_state.get("show_booking_success")
+)
+
+if booking_active:
+    booking.render()
+    _footer()
+    st.stop()
+
+NAV_ICONS = {
+    "Filo": "🚗",
+    "Rezervasyonlarım": "🧾",
+    "Hesabım": "👤",
+    "Yönetim": "🛠️",
+}
+nav = st.segmented_control(
+    "Gezinme",
+    list(NAV_ICONS.keys()),
+    key="nav",
+    format_func=lambda item: f"{NAV_ICONS[item]} {item}",
+    label_visibility="collapsed",
+    width="stretch",
+    wrap=True,
+)
+nav = nav or "Filo"
+
+if nav == "Filo":
+    fleet.render()
+elif nav == "Rezervasyonlarım":
+    if is_guest():
+        _login_prompt(
+            "Rezervasyonlar için giriş gerekli",
+            "Misafir modunda yalnızca filoyu keşfedebilirsiniz.",
+        )
     else:
-        st.info(f"📱 +90 {st.session_state['temp_user']['tel']} numaralı telefona SMS doğrulama kodu gönderildi.")
-        st.warning(f"💬 [SİMÜLASYON SMS] DriveNow Doğrulama Kodunuz: **{st.session_state['otp_kod']}**")
-
-        with st.form("otp_form"):
-            girilen_kod = st.text_input("6 Haneli SMS Doğrulama Kodunu Girin", max_chars=6, placeholder="Örn: 482910")
-            col1, col2 = st.columns(2)
-            with col1:
-                dogrula_btn = st.form_submit_button("KODU ONAYLA VE GİRİŞ YAP ➔")
-            with col2:
-                geri_btn = st.form_submit_button("← Bilgileri Düzenle")
-
-            if dogrula_btn:
-                if girilen_kod.strip() == st.session_state["otp_kod"]:
-                    st.session_state["auth"] = True
-                    st.session_state["user"] = st.session_state["temp_user"]
-                    kaydet("GİRİŞ", f"Ad: {st.session_state['user']['ad']} - TC: {st.session_state['user']['tc']} - Tel: {st.session_state['user']['tel']} - Email: {st.session_state['user']['email']}")
-                    st.session_state["otp_gonderildi"] = False
-                    st.session_state["otp_kod"] = None
-                    st.rerun()
-                else:
-                    st.error("Hatalı doğrulama kodu! Lütfen tekrar deneyin.")
-            
-            if geri_btn:
-                st.session_state["otp_gonderildi"] = False
-                st.session_state["otp_kod"] = None
-                st.rerun()
-
-else:
-    # --- ANA UYGULAMA (TABS) ---
-    t1, t2, t3 = st.tabs(["🏎️ Araç Filosu", "📜 Kiralama Kayıtlarım & Yorum Yap", "🔑 Yönetici"])
-
-    with t1:
-        if st.session_state["secili"] is None:
-            with st.container(key="arama_karti"):
-                st.markdown(f"<div style='font-size:18px; font-weight:900;'>👋 Keyifli Sürüşler, <span style='color:#38BDF8;'>{st.session_state['user']['ad']}</span></div>", unsafe_allow_html=True)
-
-                c_loc, c_vites = st.columns([2, 1.5])
-                with c_loc:
-                    konum = st.selectbox("📍 Teslimat Noktası", list(LOKASYONLAR.keys()))
-                with c_vites:
-                    vites_filtre = st.selectbox("🔀 Vites Tipi", ["Tümü", "Otomatik", "Manuel"])
-
-                if konum in LOKASYONLAR:
-                    enlem, boylam = LOKASYONLAR[konum]
-                    df_map = pd.DataFrame([{"lat": enlem, "lon": boylam, "name": konum}])
-                    harita = pdk.Deck(
-                        map_style="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
-                        initial_view_state=pdk.ViewState(latitude=enlem, longitude=boylam, zoom=10, pitch=0),
-                        layers=[
-                            pdk.Layer(
-                                "ScatterplotLayer",
-                                data=df_map,
-                                get_position="[lon, lat]",
-                                get_radius=1500,
-                                get_fill_color=[255, 107, 0, 240],
-                                get_line_color=[255, 255, 255],
-                                line_width_min_pixels=3,
-                                pickable=True,
-                                stroked=True,
-                            )
-                        ],
-                        tooltip={"text": "Seçilen Konum: {name}"},
-                    )
-                    st.pydeck_chart(harita, width="stretch")
-                    st.caption(f"📍 Haritada seçili nokta: {konum}")
-
-                c_t1, c_t2 = st.columns(2)
-                with c_t1:
-                    bas_tarih = st.date_input("📅 Alış Tarihi", datetime.now() + timedelta(days=1))
-                with c_t2:
-                    bit_tarih = st.date_input("📅 İade Tarihi", datetime.now() + timedelta(days=2))
-
-                gun = (bit_tarih - bas_tarih).days
-                if gun <= 0:
-                    st.error("⚠️ İade tarihi alış tarihinden sonra olmalıdır!")
-                    gun = 1
-                else:
-                    st.info(f"⏱️ Toplam Kiralama Süresi: **{gun} Gün**")
-
-            indirim_orani = 0.85 if gun >= 7 else 1.0
-            if gun >= 7: 
-                st.success(f"🎉 {gun} Günlük Uzun Dönem Kiralama: Otomatik %15 İndirim Uygulandı!")
-
-            musait_sayisi = 0
-            filtre_sayisi = 0
-            for a in ARACLAR:
-                if vites_filtre != "Tümü" and a["vites"] != vites_filtre:
-                    continue
-
-                filtre_sayisi += 1
-                musait_mi = araba_musait_mi(a["ad"], bas_tarih, bit_tarih)
-                if musait_mi:
-                    musait_sayisi += 1
-                gunluk_fiyat = a["fiyat"] * indirim_orani
-                toplam_tutar = gunluk_fiyat * gun
-
-                chips_list = [f'<span class="feature-chip">✨ {d}</span>' for d in a["donanimlar"]]
-                chips_html = "".join(chips_list)
-
-                card_html = (
-                    f'<div class="car-card-detailed">'
-                    f'<div class="car-card-row">'
-                    f'<div class="car-card-main">'
-                    f'<div>'
-                    f'<span class="badge-highlight">{a["badge"]}</span>'
-                    f'<span style="background:rgba(251, 191, 36, 0.2); color:#FBBF24; font-size:12px; font-weight:900; padding:4px 10px; border-radius:10px; float:right; border: 1px solid rgba(251, 191, 36, 0.3);">★ {a["puan"]}</span>'
-                    f'</div>'
-                    f'<div style="font-size:11px; font-weight:900; color:#818CF8; letter-spacing:1px; margin-top:2px;">{a["kat"]}</div>'
-                    f'<div style="font-size:26px; font-weight:900; color:#FFFFFF; margin:4px 0 10px 0;">{a["ad"]}</div>'
-                    f'<div>'
-                    f'<span class="tag-vites">🔀 {a["vites"]}</span>'
-                    f'<span class="tag-yakit">⛽ {a["yakit"]}</span>'
-                    f'<span class="tag-koltuk">👥 {a["koltuk"]}</span>'
-                    f'<span class="tag-bagaj">🧳 {a["bagaj"]}</span>'
-                    f'</div>'
-                    f'<div style="margin-top:10px;">'
-                    f'<span class="guarantee-badge">{"🟢 Seçilen Tarihlerde Müsait" if musait_mi else "🔴 Seçilen Tarihlerde Dolu"}</span>'
-                    f'</div>'
-                    f'<div class="price-row-box">'
-                    f'<div>'
-                    f'<div style="font-size:10px; font-weight:800; color:#94A3B8;">GÜNLÜK PİYASA DEĞERİ</div>'
-                    f'<div style="font-size:20px; font-weight:900; color:#38BDF8;">{gunluk_fiyat:,.0f} ₺</div>'
-                    f'</div>'
-                    f'<div style="text-align:right;">'
-                    f'<div style="font-size:10px; font-weight:800; color:#94A3B8;">{gun} GÜNLÜK TOPLAM</div>'
-                    f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{toplam_tutar:,.0f} ₺</div>'
-                    f'</div>'
-                    f'</div>'
-                    f'</div>'
-                    f'<div class="car-image-box">'
-                    f'<span>🚗</span>'
-                    f'<img src="{a.get("gorsel", "")}" alt="{a["ad"]}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">'
-                    f'</div>'
-                    f'</div>'
-                    f'</div>'
-                )
-                st.markdown(card_html, unsafe_allow_html=True)
-
-                with st.expander("🔻 Teknik Özellikler ve Donanımları Gör"):
-                    st.markdown(
-                        f"""
-                        <div class="tech-grid">
-                            <div class="tech-item">⚙️ <b>Motor & Güç:</b> {a['motor']}</div>
-                            <div class="tech-item">🕹️ <b>Şanzıman:</b> {a['sanziman']}</div>
-                            <div class="tech-item">⛽ <b>Ort. Tüketim:</b> {a['tuketim']}</div>
-                            <div class="tech-item">🚀 <b>0-100 km/s:</b> {a['hizlanma']}</div>
-                            <div class="tech-item">🏁 <b>Maks. Hız:</b> {a['azami_hiz']}</div>
-                            <div class="tech-item">🏎️ <b>Çekiş Tipi:</b> {a['cekis']}</div>
-                        </div>
-                        <div style="margin-top:8px; margin-bottom:12px;">
-                            <b style="font-size:12px; color:#93C5FD;">Öne Çıkan Lüks Donanımlar:</b><br>{chips_html}
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
-                if musait_mi:
-                    if st.button(f"⚡ Hemen Rezerve Et - {a['ad']}", key=f"btn_{a['ad']}"):
-                        st.session_state["secili"] = {
-                            "ad": a["ad"],
-                            "kat": a["kat"],
-                            "gorsel": a.get("gorsel", ""),
-                            "fiyat": gunluk_fiyat,
-                            "toplam": toplam_tutar,
-                            "gun": gun,
-                            "konum": konum,
-                            "bas_tarih": bas_tarih,
-                            "bit_tarih": bit_tarih
-                        }
-                        st.session_state["tamamlandi"] = False
-                        st.rerun()
-
-                st.write("")
-
-            if filtre_sayisi == 0:
-                st.warning("Seçilen vites tipine uygun araç bulunamadı.")
-            elif musait_sayisi == 0:
-                st.warning("Seçilen tarihlerde uygun araç bulunmuyor. Lütfen farklı tarihler deneyin.")
-
-            st.caption("🖼️ Araç görselleri temsilîdir (kaynak: Wikimedia Commons). Ticari kullanımda kendi filo fotoğraflarınızla değiştirin.")
-
-        else:
-            s = st.session_state["secili"]
-            u = st.session_state["user"]
-
-            st.markdown("<h3 style='font-size:22px; font-weight:900;'>🔒 Rezerve, Kupon ve Doğrulama</h3>", unsafe_allow_html=True)
-
-            summary_html = (
-                f'<div class="car-card-detailed" style="border-left: 6px solid #38BDF8 !important;">'
-                f'<div class="car-card-row">'
-                f'<div class="car-card-main">'
-                f'<div style="font-size:12px; font-weight:900; color:#38BDF8;">SEÇTİĞİNİZ ARAÇ ÖZETİ</div>'
-                f'<div style="font-size:26px; font-weight:900; margin:4px 0;">{s["ad"]}</div>'
-                f'<div style="font-size:14px; color:#94A3B8; font-weight:700;">📍 {s["konum"]} | ⏱ {s["gun"]} Gün ({s["bas_tarih"].strftime("%d.%m.%Y")} - {s["bit_tarih"].strftime("%d.%m.%Y")})</div>'
-                f'</div>'
-                f'<div class="car-image-box" style="flex:0 0 150px !important; width:150px !important; height:100px !important;">'
-                f'<span>🚗</span>'
-                f'<img src="{s.get("gorsel", "")}" alt="{s["ad"]}" referrerpolicy="no-referrer" onerror="this.remove()">'
-                f'</div>'
-                f'</div>'
-                f'</div>'
-            )
-            st.markdown(summary_html, unsafe_allow_html=True)
-
-            st.markdown("<b>🎟️ Promosyon / Kupon Kodu</b>", unsafe_allow_html=True)
-            promo_kod = st.text_input("Kupon Kodu Giriniz (Örn: SUPRIZ10)", placeholder="İndirim kuponu...")
-
-            st.markdown("<b>✨ Ekstra Hizmet Paketleri (İsteğe Bağlı)</b>", unsafe_allow_html=True)
-            e_bebek = st.checkbox("👶 Bebek Koltuğu (+150 TL/Gün)")
-            e_wifi = st.checkbox("🌐 Araç İçi Taşınabilir Wi-Fi Kit (+100 TL/Gün)")
-            e_sigorta = st.checkbox("🛡️ Sınırsız Muafiyetsiz Kasko Güvencesi (+300 TL/Gün)")
-
-            ek_tutar = 0
-            secilen_ekler = []
-            if e_bebek:
-                ek_tutar += 150 * s["gun"]
-                secilen_ekler.append("Bebek Koltuğu")
-            if e_wifi:
-                ek_tutar += 100 * s["gun"]
-                secilen_ekler.append("Wi-Fi Kit")
-            if e_sigorta:
-                ek_tutar += 300 * s["gun"]
-                secilen_ekler.append("Full Kasko")
-
-            genel_toplam = s["toplam"] + ek_tutar
-            if promo_kod.strip().upper() == "SUPRIZ10":
-                genel_toplam *= 0.90
-                st.success("🎉 SUPRIZ10 Kuponu Uygulandı: %10 Ek İndirim Kazandınız!")
-
-            st.markdown(
-                f'<div class="price-row-box">'
-                f'<div style="font-size:14px; font-weight:800;">Nihai Toplam Tutar:</div>'
-                f'<div style="font-size:24px; font-weight:900; color:#FF6B00;">{genel_toplam:,.0f} ₺</div>'
-                f'</div><br>',
-                unsafe_allow_html=True
-            )
-
-            if not st.session_state["tamamlandi"]:
-                with st.form("kiralama_onay_formu"):
-                    c_e1, c_e2 = st.columns(2)
-                    with c_e1:
-                        ehliyet_no = st.text_input("Ehliyet Belge Seri No", placeholder="Örn: 123456")
-                    with c_e2:
-                        ehliyet_sinif = st.selectbox("Ehliyet Sınıfı", ["B (Binek)", "B1", "A (Motosiklet)", "C (Kamyon)", "D (Otobüs)"])
-
-                    dosya = st.file_uploader("📷 Ehliyetinizin Ön Yüz Fotoğrafı (Zorunlu)", type=["jpg", "jpeg", "png"])
-                    onay = st.form_submit_button("REZERVASYONU ONAYLA VE TAMAMLA ➔")
-
-                    if onay:
-                        if ehliyet_no.strip() and dosya is not None:
-                            safe_car_name = re.sub(r"[^\w\-]", "_", s["ad"])
-                            ext = os.path.splitext(dosya.name)[1]
-                            foto_ad = f"{u['tc']}_{safe_car_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
-                            dosya_yolu = os.path.join(UPLOAD_DIR, foto_ad)
-
-                            with open(dosya_yolu, "wb") as f:
-                                f.write(dosya.getbuffer())
-
-                            kaydet(
-                                "KİRALAMA",
-                                f"Müşteri: {u['ad']} (TC:{u['tc']}) | Araç: {s['ad']} | Konum: {s['konum']} | Gün: {s['gun']} | Tutar: {genel_toplam:,.0f} ₺ | Foto: {foto_ad}",
-                            )
-
-                            db_calistir('''INSERT INTO kiralamalar 
-                                         (tc, ad, tel, email, arac, konum, bas_tarih, bit_tarih, gun, toplam_tutar, durum, olusturma_tarihi) 
-                                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
-                                        (u["tc"], u["ad"], u["tel"], u["email"], s["ad"], s["konum"],
-                                         s["bas_tarih"].strftime("%Y-%m-%d"), s["bit_tarih"].strftime("%Y-%m-%d"),
-                                         s["gun"], genel_toplam, "Aktif", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-
-                            st.session_state["tamamlandi"] = True
-                            st.session_state["son_rezervasyon"] = {
-                                "toplam": genel_toplam,
-                                "ekler": secilen_ekler
-                            }
-                            st.rerun()
-                        else:
-                            st.error("Lütfen Ehliyet Belge Numarasını girin ve Ehliyet Fotoğrafını yükleyin.")
-
-            if st.session_state["tamamlandi"]:
-                st.balloons()
-                st.success(f"🎉 Tebrikler Sayın {u['ad']}! Rezervasyonunuz başarıyla oluşturuldu ve sisteme işlendi.")
-
-                res_info = st.session_state.get("son_rezervasyon")
-
-                if res_info:
-                    if not st.session_state.get("fatura_pdf"):
-                        st.session_state["fatura_pdf"] = pdf_fatura_olustur(
-                            u['ad'], u['tc'], u['tel'], s['ad'], s['konum'],
-                            s['bas_tarih'], s['bit_tarih'], s['gun'],
-                            res_info['toplam'], res_info['ekler']
-                        )
-                        st.session_state["eposta_sonuc"] = eposta_gonder(
-                            u['email'], st.session_state["fatura_pdf"], u['ad']
-                        )
-
-                    pdf_file = st.session_state.get("fatura_pdf")
-                    eposta_sonuc = st.session_state.get("eposta_sonuc")
-
-                    if eposta_sonuc:
-                        eposta_basarili, eposta_hata = eposta_sonuc
-                        if eposta_basarili:
-                            st.info(f"📧 Rezervasyon faturanız başarıyla {u['email']} adresine gönderildi.")
-                        else:
-                            st.warning(f"⚠️ E-posta gönderilemedi: {eposta_hata}")
-
-                    if pdf_file:
-                        st.download_button("📄 Rezervasyon Faturasını İndir (PDF)", pdf_file, file_name=f"fatura_{u['tc']}.pdf", mime="application/pdf")
-
-            if st.button("⬅️ Başka Araç Seç"):
-                st.session_state["fatura_pdf"] = None
-                st.session_state["eposta_sonuc"] = None
-                st.session_state["secili"] = None
-                st.session_state["tamamlandi"] = False
-                st.rerun()
-
-    with t2:
-        st.markdown("<h3 style='font-size:20px; font-weight:900; margin-bottom:12px;'>Geçmiş Kiralama Kayıtlarınız</h3>", unsafe_allow_html=True)
-        u_ad = st.session_state["user"]["ad"]
-        u_tc = st.session_state["user"]["tc"]
-
-        df_gecmis = db_oku(
-            "SELECT arac, konum, bas_tarih, bit_tarih, toplam_tutar, durum "
-            "FROM kiralamalar WHERE tc = ? ORDER BY bas_tarih DESC",
-            (u_tc,),
+        account.render("reservations")
+elif nav == "Hesabım":
+    if is_guest():
+        _login_prompt(
+            "Hesabınıza erişmek için giriş yapın",
+            "Profil, favoriler ve geçmiş kiralamalar üyelere özeldir.",
         )
-        if not df_gecmis.empty:
-            st.dataframe(df_gecmis, width="stretch")
-        else:
-            st.info("Henüz sistemde kiralama kaydınız bulunmuyor.")
+    else:
+        account.render()
+elif nav == "Yönetim":
+    admin.render()
 
-        st.markdown("<br><b>⭐️ Deneyiminizi Değerlendirin & Yorum Yapın</b>", unsafe_allow_html=True)
-        with st.form("yorum_formu"):
-            sec_arac = st.selectbox("Değerlendirilecek Araç", [a["ad"] for a in ARACLAR])
-            puan = st.slider("Puanınız", 1, 5, 5)
-            yorum = st.text_area("Yorumunuz")
-            y_submit = st.form_submit_button("Yorumu Gönder")
-
-            if y_submit and yorum.strip():
-                kaydet("YORUM", f"Müşteri: {u_ad} | Araç: {sec_arac} | Puan: {puan}★ | Yorum: {yorum.strip()}")
-                db_calistir(
-                    "INSERT INTO yorumlar (ad, arac, puan, yorum, tarih) VALUES (?, ?, ?, ?, ?)",
-                    (u_ad, sec_arac, puan, yorum.strip(), datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                )
-                st.success("Yorumunuz ve değerlendirmeniz başarıyla iletildi!")
-
-    with t3:
-        u = st.session_state["user"]
-
-        driver_card_html = (
-            f'<div class="vip-card">'
-            f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">'
-            f'<span class="vip-tag" style="font-size:12px; font-weight:900; letter-spacing:2px;">DRIVENOW VIP MEMBER</span>'
-            f'<span style="font-size:20px;">💎</span>'
-            f'</div>'
-            f'<div class="vip-subtext" style="font-size:11px;">SÜRÜCÜ AD SOYAD</div>'
-            f'<div style="font-size:24px; font-weight:900; text-transform:uppercase; margin-bottom:16px;">{u["ad"]}</div>'
-            f'<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.06); padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">'
-            f'<div>'
-            f'<div class="vip-subtext" style="font-size:10px;">TC NO</div>'
-            f'<div style="font-size:14px; font-weight:800;">{u["tc"]}</div>'
-            f'</div>'
-            f'<div>'
-            f'<div class="vip-subtext" style="font-size:10px;">TELEFON</div>'
-            f'<div style="font-size:14px; font-weight:800;">+90 {u["tel"]}</div>'
-            f'</div>'
-            f'</div>'
-            f'</div>'
-        )
-        st.markdown(driver_card_html, unsafe_allow_html=True)
-
-        lock = st.checkbox("🔒 Yönetici Paneli Girişi")
-        if lock:
-            sifre = st.text_input("Admin Şifresi", type="password")
-            if ADMIN_SIFRE and hmac.compare_digest(sifre, ADMIN_SIFRE):
-                st.success("Yetkili Girişi Onaylandı.")
-                if VARSAYILAN_ADMIN_SIFRE_KULLANILIYOR:
-                    st.warning("Varsayılan admin şifresi kullanılıyor. Üretim ortamı için `ADMIN_SIFRE` değerini `.streamlit/secrets.toml` dosyasına tanımlamanız önerilir.")
-
-                st.markdown("<br><b>💬 Müşteri Yorumları ve Değerlendirmeleri</b>", unsafe_allow_html=True)
-                df_yorumlar = db_oku("SELECT ad, arac, puan, yorum, tarih FROM yorumlar ORDER BY id DESC")
-                if not df_yorumlar.empty:
-                    st.dataframe(df_yorumlar, width="stretch")
-                else:
-                    st.info("Henüz müşteriler tarafından gönderilmiş bir yorum bulunmuyor.")
-
-                st.markdown("<b>📱 Admin WhatsApp Onay Merkezi</b>", unsafe_allow_html=True)
-                bekleyen_rez = db_oku(
-                    "SELECT id, ad, tel, arac, bas_tarih, bit_tarih, toplam_tutar "
-                    "FROM kiralamalar WHERE durum = 'Aktif' ORDER BY id"
-                )
-                
-                if not bekleyen_rez.empty:
-                    etiketler = {
-                        int(r["id"]): f"ID:{r['id']} - {r['ad']} ({r['arac']}) - {r['toplam_tutar']:,.0f} TL"
-                        for _, r in bekleyen_rez.iterrows()
-                    }
-                    secilen_id = st.selectbox(
-                        "Onay Mesajı Gönderilecek Rezervasyon",
-                        list(etiketler),
-                        format_func=lambda i: etiketler[i],
-                    )
-
-                    secilen_kayit = bekleyen_rez[bekleyen_rez['id'] == secilen_id].iloc[0]
-
-                    musteri_tel = f"90{secilen_kayit['tel']}"
-                    wa_mesaj = tr_duzelt(f"Sayin {secilen_kayit['ad']}, DriveNow uzerinden {secilen_kayit['arac']} araci icin yaptiginiz rezervasyon onaylanmistir. Tarihler: {secilen_kayit['bas_tarih']} / {secilen_kayit['bit_tarih']}. Tutar: {secilen_kayit['toplam_tutar']:,.0f} TL. Iyi yolculuklar dileriz!")
-                    wa_link = f"https://wa.me/{musteri_tel}?text={quote(wa_mesaj)}"
-
-                    st.markdown(
-                        f'''
-                        <a href="{wa_link}" target="_blank" style="text-decoration:none;">
-                            <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; text-align: center; font-size: 16px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
-                                💬 Müşteriye WhatsApp Onay Linkini Aç ({secilen_kayit['ad']})
-                            </div>
-                        </a>
-                        ''', 
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.info("Onay bekleyen aktif kiralama bulunmuyor.")
-
-                st.markdown("<b>📊 Ciro ve Performans Analizi</b>", unsafe_allow_html=True)
-                df_analiz = db_oku("SELECT * FROM kiralamalar")
-                if not df_analiz.empty:
-                    toplam_ciro = df_analiz['toplam_tutar'].sum()
-                    aktif_sayisi = len(df_analiz[df_analiz['durum'] == 'Aktif'])
-
-                    c_m1, c_m2 = st.columns(2)
-                    c_m1.metric("Toplam Tahsilat / Ciro", f"{toplam_ciro:,.0f} TL")
-                    c_m2.metric("Aktif Kiralama Sayısı", aktif_sayisi)
-
-                    fig = px.pie(df_analiz, names='arac', title="Araç Bazlı Kiralama Dağılımı", hole=0.4, template="plotly_dark")
-                    st.plotly_chart(fig, width="stretch")
-
-                st.markdown("<b>🛠️ Araç İade & Hasar Yönetimi</b>", unsafe_allow_html=True)
-                aktifler = db_oku("SELECT id, tc, ad, arac FROM kiralamalar WHERE durum = 'Aktif' ORDER BY id")
-                
-                if not aktifler.empty:
-                    iade_etiketler = {
-                        int(r["id"]): f"{r['id']} - {r['ad']} - {r['arac']}"
-                        for _, r in aktifler.iterrows()
-                    }
-                    k_id = st.selectbox(
-                        "İade Alınacak İşlem (ID - Müşteri - Araç)",
-                        list(iade_etiketler),
-                        format_func=lambda i: iade_etiketler[i],
-                        key="iade_select",
-                    )
-                    
-                    with st.form("iade_formu"):
-                        km = st.number_input("Dönüş Kilometresi", min_value=0, step=100)
-                        hasar_durum = st.selectbox("Hasar Durumu", ["Sorunsuz", "Çizik/Gövde Hasarı", "Mekanik Arıza", "Kaza Tutanaklı"])
-                        notlar = st.text_area("Yönetici Notları")
-                        
-                        if st.form_submit_button("İadeyi Tamamla ve Aracı Filoya Tekrar Müsait Yap"):
-                            with closing(db_baglan()) as conn, conn:
-                                conn.execute("UPDATE kiralamalar SET durum = 'Tamamlandı' WHERE id = ?", (k_id,))
-                                conn.execute("INSERT INTO iadeler (kiralama_id, km, hasar_durumu, notlar, foto_yolu) VALUES (?,?,?,?,?)",
-                                             (k_id, km, hasar_durum, notlar, "Yok"))
-                            st.success("Araç başarıyla iade alındı ve takvimi tekrar müsait duruma getirildi.")
-                            st.rerun()
-                else:
-                    st.info("Sistemde iade bekleyen aktif kiralama bulunmuyor.")
-
-                g_logs, k_logs = kayitlari_ayristir()
-                st.markdown("<b>📄 Sistem Raporları (.txt)</b>", unsafe_allow_html=True)
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.download_button("📥 Giriş Yapanlar", g_logs, "giris_yapanlar.txt", mime="text/plain")
-                with c2:
-                    st.download_button("📥 Kiralama Yapanlar", k_logs, "kiralama_kayitlari.txt", mime="text/plain")
-
-                st.markdown("<br><b>📷 Yüklenen Ehliyet Fotoğrafları</b>", unsafe_allow_html=True)
-                fotolar = os.listdir(UPLOAD_DIR)
-                if fotolar:
-                    for f in fotolar:
-                        f_path = os.path.join(UPLOAD_DIR, f)
-                        st.image(f_path, caption=f, width=240)
-                        with open(f_path, "rb") as file:
-                            st.download_button(f"Fotoğrafı İndir: {f}", file, file_name=f, key=f"dl_{f}")
-                else:
-                    st.info("Henüz yüklenen fotoğraf yok.")
-
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("🚨 Tüm Verileri ve Fotoğrafları Sıfırla"):
-                    for k in ["secili", "tamamlandi", "son_rezervasyon", "fatura_pdf", "eposta_sonuc"]:
-                        st.session_state[k] = None if k in ["secili", "son_rezervasyon", "fatura_pdf", "eposta_sonuc"] else False
-                    if os.path.exists(LOG_FILE):
-                        os.remove(LOG_FILE)
-                    if os.path.exists(DB_FILE):
-                        os.remove(DB_FILE)
-                    for f in os.listdir(UPLOAD_DIR):
-                        os.remove(os.path.join(UPLOAD_DIR, f))
-                    init_db()
-                    st.success("Tüm veriler temizlendi!")
-                    st.rerun()
-            elif sifre != "":
-                st.error("Hatalı Admin Şifresi!")
-
-        if st.button("ÇIKIŞ YAP"):
-            st.session_state["auth"] = False
-            st.session_state["user"] = {}
-            st.session_state["secili"] = None
-            st.session_state["tamamlandi"] = False
-            st.session_state["fatura_pdf"] = None
-            st.session_state["eposta_sonuc"] = None
-            st.session_state["otp_gonderildi"] = False
-            st.rerun()
+_footer()

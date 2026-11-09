@@ -877,17 +877,46 @@ _PACKAGE_B64 = (
 
 def _install_drivenow() -> None:
     import base64 as _b64
+    import hashlib as _hashlib
     import io as _io
+    import os as _os
     import sys as _sys
     import tempfile as _tempfile
     import zipfile as _zipfile
 
-    if "drivenow" in _sys.modules:
+    _pkg_hash = _hashlib.sha256(_PACKAGE_B64.encode("ascii")).hexdigest()
+    if (
+        getattr(_sys, "_drivenow_pkg_hash", None) == _pkg_hash
+        and "drivenow" in _sys.modules
+    ):
         return
+
+    # Veri klasoru: once uygulama klasoru, yazilamazsa gecici klasor.
+    if not _os.environ.get("DRIVENOW_DATA_DIR"):
+        _candidate = _os.path.join(
+            _os.path.dirname(_os.path.abspath(__file__)), "data"
+        )
+        try:
+            _os.makedirs(_candidate, exist_ok=True)
+            _os.environ["DRIVENOW_DATA_DIR"] = _candidate
+        except OSError:
+            _os.environ["DRIVENOW_DATA_DIR"] = _os.path.join(
+                _tempfile.gettempdir(), "drivenow_data"
+            )
+
     target = _tempfile.mkdtemp(prefix="drivenow_pkg_")
     with _zipfile.ZipFile(_io.BytesIO(_b64.b64decode(_PACKAGE_B64))) as _zf:
         _zf.extractall(target)
+
+    # Guncelleme sonrasi eski moduller bellekte kalmasin.
+    for _name in [
+        _n
+        for _n in list(_sys.modules)
+        if _n == "drivenow" or _n.startswith("drivenow.")
+    ]:
+        del _sys.modules[_name]
     _sys.path.insert(0, target)
+    _sys._drivenow_pkg_hash = _pkg_hash
 
 
 _install_drivenow()
